@@ -10,7 +10,6 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Checks if screen is mobile or desktop
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile(); 
@@ -18,7 +17,6 @@ export default function App() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Converts final letters to standard
   const mapLetter = (char: string) => {
     const finalMap: Record<string, string> = { 'ם': 'מ', 'ן': 'נ', 'ץ': 'צ', 'ף': 'פ', 'ך': 'כ' };
     return finalMap[char] || char;
@@ -53,10 +51,26 @@ export default function App() {
   const mishnayotData = appData.mishnayot as Record<string, string[]>;
   const tehillimData = appData.tehillim as Record<string, string[]>;
 
+  // פונקציה לעיבוד טקסט עם הדגשת כותרות
+  const renderFormattedText = (text: string) => {
+    const headers = ["פרק יש מעלין", "אותיות נשמה", "תפילה בסיום לימוד המשניות"];
+    return text.split('\n').map((line, i) => {
+      const isHeader = headers.some(h => line.includes(h));
+      return (
+        <p key={i} style={{ 
+          fontWeight: isHeader ? 'bold' : 'normal', 
+          fontSize: isHeader ? `${fontSize + 2}px` : `${fontSize}px`,
+          marginTop: isHeader ? '20px' : '0'
+        }}>
+          {line}
+        </p>
+      );
+    });
+  };
+
   return (
     <div style={{ display: 'flex', direction: 'rtl', fontFamily: 'Georgia, serif', minHeight: '100vh', backgroundColor: '#faf8f5', flexDirection: isMobile ? 'column' : 'row' }}>
       
-      {/* Navigation - Mobile or Desktop */}
       {isMobile ? (
         <header style={{ position: 'sticky', top: 0, backgroundColor: '#fff', borderBottom: '1px solid #ddd', padding: '10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1000, boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
           <button onClick={() => setIsMenuOpen(!isMenuOpen)} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', padding: '0 10px' }}>
@@ -86,7 +100,6 @@ export default function App() {
         </nav>
       )}
 
-      {/* Mobile Dropdown Menu */}
       {isMobile && isMenuOpen && (
         <nav style={{ position: 'fixed', top: '60px', left: 0, right: 0, backgroundColor: '#fff', padding: '20px', borderBottom: '2px solid #0056b3', zIndex: 999, boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
           <ul style={{ listStyle: 'none', padding: 0, lineHeight: '2.5', margin: 0, fontSize: '18px' }}>
@@ -100,7 +113,6 @@ export default function App() {
         </nav>
       )}
 
-      {/* Main Booklet Content */}
       <main style={{ flex: 1, padding: isMobile ? '15px' : '40px', fontSize: `${fontSize}px`, maxWidth: '800px', margin: '0 auto', lineHeight: '1.8' }}>
         
         <section id="tefillah">
@@ -118,7 +130,7 @@ export default function App() {
                {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <p key={i}>{text}</p>) : <p>הטקסט יתווסף בהמשך</p>}
              </div>
           ))}
-          <p style={{ whiteSpace: 'pre-line' }}>{appData.mishnahOutro}</p>
+          <div>{renderFormattedText(appData.mishnahOutro)}</div>
         </section>
         <hr style={{ margin: '40px 0' }}/>
 
