@@ -51,9 +51,9 @@ export default function App() {
   const mishnayotData = appData.mishnayot as Record<string, string[]>;
   const tehillimData = appData.tehillim as Record<string, string[]>;
 
-  // פונקציה לעיבוד טקסט עם הדגשת כותרות
+  // הפונקציה המעודכנת שמחפשת את הכותרות בדיוק עם המרכאות
   const renderFormattedText = (text: string) => {
-    const headers = ["פרק יש מעלין", "אותיות נשמה", "תפילה בסיום לימוד המשניות"];
+    const headers = ['פרק "יש מעלין"', 'אותיות "נשמה"', "תפילה בסיום לימוד המשניות"];
     return text.split('\n').map((line, i) => {
       const isHeader = headers.some(h => line.includes(h));
       return (
@@ -167,8 +167,3 @@ export default function App() {
           <h2>קדיש יתום / על ישראל</h2>
           <p style={{ whiteSpace: 'pre-line' }}>{appData.kaddish}</p>
         </section>
-
-      </main>
-    </div>
-  );
-}
