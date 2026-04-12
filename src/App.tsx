@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { appData } from './data';
 import './App.css';
 
 export default function App() {
   const [name, setName] = useState('');
-  const [gender, setGender] = useState('male');
+  const [gender, setGender] = useState<'male' | 'female'>('male');
   const [isGenerated, setIsGenerated] = useState(false);
   const [fontSize, setFontSize] = useState(18);
 
   // Convert final letters to standard letters
-  const mapLetter = (char) => {
-    const finalMap = { 'ם': 'מ', 'ן': 'נ', 'ץ': 'צ', 'ף': 'פ', 'ך': 'כ' };
+  const mapLetter = (char: string) => {
+    const finalMap: Record<string, string> = { 'ם': 'מ', 'ן': 'נ', 'ץ': 'צ', 'ף': 'פ', 'ך': 'כ' };
     return finalMap[char] || char;
   };
 
@@ -28,7 +28,7 @@ export default function App() {
             onChange={(e) => setName(e.target.value)} 
             style={{ padding: '10px', fontSize: '16px' }}
           />
-          <select value={gender} onChange={(e) => setGender(e.target.value)} style={{ padding: '10px', fontSize: '16px' }}>
+          <select value={gender} onChange={(e) => setGender(e.target.value as 'male' | 'female')} style={{ padding: '10px', fontSize: '16px' }}>
             <option value="male">זכר</option>
             <option value="female">נקבה</option>
           </select>
@@ -39,6 +39,9 @@ export default function App() {
       </div>
     );
   }
+
+  const mishnayotData = appData.mishnayot as Record<string, string[]>;
+  const tehillimData = appData.tehillim as Record<string, string[]>;
 
   return (
     <div style={{ display: 'flex', direction: 'rtl', fontFamily: 'Georgia, serif', minHeight: '100vh', backgroundColor: '#faf8f5' }}>
@@ -73,10 +76,10 @@ export default function App() {
         <section id="mishnayot">
           <h2>לימוד משניות</h2>
           <p>{appData.mishnahIntro}</p>
-          {letters.map((char, index) => (
+          {letters.map((char: string, index: number) => (
              <div key={index}>
                <h3>אות {char}</h3>
-               {appData.mishnayot[char] ? appData.mishnayot[char].map((text, i) => <p key={i}>{text}</p>) : <p>הטקסט יתווסף בהמשך</p>}
+               {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <p key={i}>{text}</p>) : <p>הטקסט יתווסף בהמשך</p>}
              </div>
           ))}
           <p>{appData.mishnahOutro}</p>
@@ -86,10 +89,10 @@ export default function App() {
         <section id="tehillim">
           <h2>תהילים</h2>
           <p>{appData.tehillimIntro}</p>
-          {letters.map((char, index) => (
+          {letters.map((char: string, index: number) => (
              <div key={index}>
                <h3>אות {char}</h3>
-               {appData.tehillim[char] ? appData.tehillim[char].map((text, i) => <p key={i}>{text}</p>) : <p>הטקסט יתווסף בהמשך</p>}
+               {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <p key={i}>{text}</p>) : <p>הטקסט יתווסף בהמשך</p>}
              </div>
           ))}
         </section>
@@ -97,7 +100,7 @@ export default function App() {
 
         <section id="zohar">
           <h2>זוהר (אדרא זוטא)</h2>
-          {appData.zohar.map((paragraph, index) => (
+          {appData.zohar.map((paragraph: {aramaic: string, hebrew: string}, index: number) => (
             <div key={index} style={{ marginBottom: '20px' }}>
               <p><strong>{paragraph.aramaic}</strong></p>
               <p>{paragraph.hebrew}</p>
