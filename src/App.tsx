@@ -51,11 +51,16 @@ export default function App() {
   const mishnayotData = appData.mishnayot as Record<string, string[]>;
   const tehillimData = appData.tehillim as Record<string, string[]>;
 
-  // הפונקציה המעודכנת שמחפשת את הכותרות בדיוק עם המרכאות
+  // פונקציה חסינה עם הגדרות סוגים מפורשות ל-Vercel והתעלמות ממרכאות
   const renderFormattedText = (text: string) => {
-    const headers = ['פרק "יש מעלין"', 'אותיות "נשמה"', "תפילה בסיום לימוד המשניות"];
-    return text.split('\n').map((line, i) => {
-      const isHeader = headers.some(h => line.includes(h));
+    // אנחנו מחפשים את המילים בלי המרכאות כדי לא ליפול על סוגי מרכאות שונים
+    const headers = ["פרק יש מעלין", "אותיות נשמה", "תפילה בסיום לימוד המשניות"];
+    
+    return text.split('\n').map((line: string, i: number) => {
+      // מסירים את כל המרכאות (הרגילות והחכמות) לפני הבדיקה
+      const cleanLine = line.replace(/["”“'']/g, "");
+      const isHeader = headers.some((h: string) => cleanLine.includes(h));
+      
       return (
         <p key={i} style={{ 
           fontWeight: isHeader ? 'bold' : 'normal', 
@@ -167,3 +172,8 @@ export default function App() {
           <h2>קדיש יתום / על ישראל</h2>
           <p style={{ whiteSpace: 'pre-line' }}>{appData.kaddish}</p>
         </section>
+
+      </main>
+    </div>
+  );
+}
