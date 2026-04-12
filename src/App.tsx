@@ -152,8 +152,8 @@ export default function App() {
         <hr style={{ margin: '40px 0' }}/>
 
         <section id="kaddish">
-          <h2>קדיש יתום</h2>
-          <p>{appData.kaddish}</p>
+          <h2>קדיש יתום / על ישראל</h2>
+          <p style={{ whiteSpace: 'pre-line' }}>{appData.kaddish}</p>
         </section>
 
       </main>
