@@ -97,8 +97,8 @@ export default function App() {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: theme.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: theme.uiFont, padding: '20px', direction: 'rtl' }}>
         <div style={{ backgroundColor: theme.card, padding: '40px 30px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', width: '100%', maxWidth: '450px', textAlign: 'center', borderTop: `6px solid ${theme.primary}` }}>
-          <h1 style={{ color: theme.primary, marginBottom: '5px', fontSize: '2.5rem', fontWeight: 800 }}>לוח אזכרה</h1>
-          <p style={{ color: '#718096', marginBottom: '35px', fontSize: '1.2rem' }}>הכנת חוברת לימוד לעילוי נשמת</p>
+        <h1 style={{ color: theme.primary, marginBottom: '15px', fontSize: '2.5rem', fontWeight: 800 }}>חוברת לימוד</h1>
+<p style={{ color: '#718096', marginBottom: '35px', fontSize: '1.2rem' }}>ליום האזכרה</p>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', textAlign: 'right' }}>
             <div>
