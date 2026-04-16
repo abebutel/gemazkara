@@ -17,7 +17,7 @@ export default function App() {
   const [hebDateLetters, setHebDateLetters] = useState('');
   const [hebDateNumbers, setHebDateNumbers] = useState('');
 
-  // פונקציית עזר להמרת מספר לגימטריה (עבור יום ושנה)
+  // Helper function for Gematria
   const toGematria = (num: number): string => {
     if (num <= 0) return '';
     let n = num % 1000;
@@ -76,7 +76,8 @@ export default function App() {
           
           setHebDateLetters(lettersStr);
           setHebDateNumbers(numbersStr);
-        } catch (e) {
+        } catch {
+          // Removed the (e) here so Vercel doesn't flag an unused variable!
           setHebDateLetters('');
           setHebDateNumbers('');
         }
@@ -341,4 +342,3 @@ export default function App() {
     </div>
   );
 }
-
