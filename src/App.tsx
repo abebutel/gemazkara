@@ -1,4 +1,5 @@
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { appData } from './data';
 import './App.css';
 
@@ -77,7 +78,6 @@ export default function App() {
           setHebDateLetters(lettersStr);
           setHebDateNumbers(numbersStr);
         } catch {
-          // Removed the (e) here so Vercel doesn't flag an unused variable!
           setHebDateLetters('');
           setHebDateNumbers('');
         }
