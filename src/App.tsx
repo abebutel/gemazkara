@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { appData } from './data';
 import './App.css';
 
@@ -10,7 +10,6 @@ export default function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
-  // משתנים עבור מחשבון התאריכים
   const [calcDay, setCalcDay] = useState('');
   const [calcMonth, setCalcMonth] = useState('');
   const [calcYear, setCalcYear] = useState('');
@@ -21,19 +20,14 @@ export default function App() {
   // פונקציית עזר להמרת מספר לגימטריה (עבור יום ושנה)
   const toGematria = (num: number): string => {
     if (num <= 0) return '';
-    
-    // טיפול בערכים מיוחדים לשנה (תשפ"ה וכו')
     let n = num % 1000;
     const units = ["", "א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט"];
     const tens = ["", "י", "כ", "ל", "מ", "נ", "ס", "ע", "פ", "צ"];
     const hundreds = ["", "ק", "ר", "ש", "ת", "תק", "תר", "תש", "תת", "תתק"];
     
     let res = hundreds[Math.floor(n / 100)] + tens[Math.floor((n % 100) / 10)] + units[n % 10];
-    
-    // תיקון ט"ו ו-ט"ז
     res = res.replace("יה", "טו").replace("יו", "טז");
     
-    // הוספת גרשיים
     if (res.length > 1) {
       return res.slice(0, -1) + '"' + res.slice(-1);
     }
@@ -54,7 +48,6 @@ export default function App() {
     document.head.appendChild(link);
   }, []);
 
-  // מחשב תאריך עברי
   useEffect(() => {
     if (calcDay && calcMonth && calcYear) {
       const d = parseInt(calcDay);
@@ -68,7 +61,6 @@ export default function App() {
         }
         
         try {
-          // חילוץ נתונים גולמיים מהלוח העברי
           const parts = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
             day: 'numeric',
             month: 'long',
@@ -79,10 +71,7 @@ export default function App() {
           const monthName = parts.find(p => p.type === 'month')?.value || '';
           const yearVal = parseInt(parts.find(p => p.type === 'year')?.value || '0');
 
-          // בניית מחרוזת אותיות (גימטריה)
           const lettersStr = `${toGematria(dayVal)} ב${monthName} ${toGematria(yearVal)}`;
-          
-          // בניית מחרוזת מספרים
           const numbersStr = `${dayVal} ב${monthName} ${yearVal}`;
           
           setHebDateLetters(lettersStr);
@@ -137,7 +126,7 @@ export default function App() {
     });
   };
 
-  const SectionCard = ({ id, title, children }: { id: string, title: string, children: React.ReactNode }) => (
+  const SectionCard = ({ id, title, children }: { id: string, title: string, children: ReactNode }) => (
     <section id={id} style={{ 
       backgroundColor: theme.card, 
       padding: isMobile ? '25px 20px' : '45px', 
@@ -209,4 +198,146 @@ export default function App() {
           <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', textAlign: 'right' }}>
             <div style={{ flex: 1 }}>
               <label style={{ display: 'block', fontSize: '0.9rem', color: theme.primary, marginBottom: '5px' }}>שנה</label>
-              <input type="number" placeholder="2026" value={calcYear
+              <input type="number" placeholder="2026" value={calcYear} onChange={(e) => setCalcYear(e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid #cbd5e0', boxSizing: 'border-box' }}/>
+            </div>
+            <div style={{ flex: 1.5 }}>
+              <label style={{ display: 'block', fontSize: '0.9rem', color: theme.primary, marginBottom: '5px' }}>חודש</label>
+              <select value={calcMonth} onChange={(e) => setCalcMonth(e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid #cbd5e0', boxSizing: 'border-box', cursor: 'pointer' }}>
+                <option value="">בחר...</option>
+                <option value="1">ינואר</option>
+                <option value="2">פברואר</option>
+                <option value="3">מרץ</option>
+                <option value="4">אפריל</option>
+                <option value="5">מאי</option>
+                <option value="6">יוני</option>
+                <option value="7">יולי</option>
+                <option value="8">אוגוסט</option>
+                <option value="9">ספטמבר</option>
+                <option value="10">אוקטובר</option>
+                <option value="11">נובמבר</option>
+                <option value="12">דצמבר</option>
+              </select>
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ display: 'block', fontSize: '0.9rem', color: theme.primary, marginBottom: '5px' }}>יום</label>
+              <input type="number" placeholder="16" min="1" max="31" value={calcDay} onChange={(e) => setCalcDay(e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid #cbd5e0', boxSizing: 'border-box' }}/>
+            </div>
+          </div>
+
+          <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', color: theme.text, fontSize: '1.1rem', marginBottom: '20px' }}>
+            <input type="checkbox" checked={afterSunset} onChange={(e) => setAfterSunset(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+            התאריך חל <strong>לאחר השקיעה</strong>
+          </label>
+
+          {hebDateLetters && (
+            <div style={{ padding: '15px', backgroundColor: '#f0f4f8', border: `1px solid ${theme.primary}`, borderRadius: '8px', color: theme.primary }}>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '5px' }}>{hebDateLetters}</div>
+              <div style={{ fontSize: '1.1rem', color: '#4a5568', opacity: 0.8 }}>({hebDateNumbers})</div>
+            </div>
+          )}
+        </div>
+
+      </div>
+    );
+  }
+
+  const mishnayotData = appData.mishnayot as Record<string, string[]>;
+  const tehillimData = appData.tehillim as Record<string, string[]>;
+
+  return (
+    <div style={{ display: 'flex', direction: 'rtl', fontFamily: theme.bookFont, minHeight: '100vh', backgroundColor: theme.bg, flexDirection: isMobile ? 'column' : 'row' }}>
+      
+      {isMobile ? (
+        <header style={{ position: 'sticky', top: 0, backgroundColor: theme.card, borderBottom: '1px solid #e2e8f0', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1000, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+          <button onClick={() => setIsMenuOpen(!isMenuOpen)} style={{ background: 'none', border: 'none', fontSize: '28px', color: theme.primary, cursor: 'pointer' }}>
+            ☰
+          </button>
+          <div style={{ display: 'flex', gap: '8px', fontFamily: theme.uiFont }}>
+            <button onClick={() => setFontSize(f => f + 2)} style={{ padding: '6px 14px', borderRadius: '6px', border: `1px solid ${theme.primary}`, color: theme.primary, background: 'transparent', fontSize: '16px', fontWeight: 600 }}>A+</button>
+            <button onClick={() => setFontSize(f => Math.max(14, f - 2))} style={{ padding: '6px 14px', borderRadius: '6px', border: `1px solid ${theme.primary}`, color: theme.primary, background: 'transparent', fontSize: '16px', fontWeight: 600 }}>A-</button>
+          </div>
+        </header>
+      ) : (
+        <nav style={{ width: '280px', padding: '30px 20px', backgroundColor: theme.card, borderLeft: '1px solid #e2e8f0', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', fontFamily: theme.uiFont, boxShadow: '-2px 0 15px rgba(0,0,0,0.03)' }}>
+          <h3 style={{ color: theme.primary, fontSize: '1.4rem', borderBottom: `2px solid ${theme.accent}`, paddingBottom: '10px', marginBottom: '20px' }}>תוכן עניינים</h3>
+          <ul style={{ listStyle: 'none', padding: 0, lineHeight: '2.5', fontSize: '1.1rem' }}>
+            <li><a href="#tefillah" style={{textDecoration: 'none', color: '#4a5568', display: 'block'}}>תפילה קודם הלימוד</a></li>
+            <li><a href="#mishnayot" style={{textDecoration: 'none', color: '#4a5568', display: 'block'}}>לימוד משניות</a></li>
+            <li><a href="#tehillim" style={{textDecoration: 'none', color: '#4a5568', display: 'block'}}>תהילים</a></li>
+            <li><a href="#zohar" style={{textDecoration: 'none', color: '#4a5568', display: 'block'}}>זוהר (אדרא זוטא)</a></li>
+            <li><a href="#hashkava" style={{textDecoration: 'none', color: '#4a5568', display: 'block'}}>השכבה</a></li>
+            <li><a href="#kaddish" style={{textDecoration: 'none', color: '#4a5568', display: 'block'}}>קדיש</a></li>
+          </ul>
+          <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
+            <h4 style={{ color: theme.primary, marginBottom: '15px' }}>גודל טקסט</h4>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={() => setFontSize(f => f + 2)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: `1px solid ${theme.primary}`, color: theme.primary, background: 'transparent', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>A+</button>
+              <button onClick={() => setFontSize(f => Math.max(14, f - 2))} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: `1px solid ${theme.primary}`, color: theme.primary, background: 'transparent', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>A-</button>
+            </div>
+          </div>
+        </nav>
+      )}
+
+      {isMobile && isMenuOpen && (
+        <nav style={{ position: 'fixed', top: '65px', left: 0, right: 0, backgroundColor: theme.card, padding: '20px', borderBottom: `3px solid ${theme.primary}`, zIndex: 999, boxShadow: '0 10px 20px rgba(0,0,0,0.1)', fontFamily: theme.uiFont }}>
+          <ul style={{ listStyle: 'none', padding: 0, lineHeight: '3', margin: 0, fontSize: '1.2rem' }}>
+            <li><a href="#tefillah" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>תפילה קודם הלימוד</a></li>
+            <li><a href="#mishnayot" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>לימוד משניות</a></li>
+            <li><a href="#tehillim" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>תהילים</a></li>
+            <li><a href="#zohar" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>זוהר (אדרא זוטא)</a></li>
+            <li><a href="#hashkava" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>השכבה</a></li>
+            <li><a href="#kaddish" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text }}>קדיש יתום</a></li>
+          </ul>
+        </nav>
+      )}
+
+      <main style={{ flex: 1, padding: isMobile ? '20px' : '40px', fontSize: `${fontSize}px`, maxWidth: '900px', margin: '0 auto', lineHeight: '1.9' }}>
+        
+        <SectionCard id="tefillah" title="תפילה קודם הלימוד">
+          <p style={{ textAlign: 'justify' }}>{appData.tefillah[gender].replace('{name}', name)}</p>
+        </SectionCard>
+
+        <SectionCard id="mishnayot" title="לימוד משניות">
+          <p style={{ textAlign: 'justify', marginBottom: '35px' }}>{appData.mishnahIntro}</p>
+          {letters.map((char: string, index: number) => (
+             <div key={index} style={{ marginBottom: '35px' }}>
+               <h3 style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
+               {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <p key={i} style={{ marginBottom: '12px', textAlign: 'justify' }}>{text}</p>) : <p>הטקסט יתווסף בהמשך</p>}
+             </div>
+          ))}
+          <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
+            {renderFormattedText(appData.mishnahOutro)}
+          </div>
+        </SectionCard>
+
+        <SectionCard id="tehillim" title="תהילים">
+          <p style={{ textAlign: 'center', marginBottom: '35px', fontWeight: 700, color: theme.primary }}>{appData.tehillimIntro}</p>
+          {letters.map((char: string, index: number) => (
+             <div key={index} style={{ marginBottom: '30px' }}>
+               <h3 style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
+               {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <p key={i} style={{ marginBottom: '12px', textAlign: 'center' }}>{text}</p>) : <p>הטקסט יתווסף בהמשך</p>}
+             </div>
+          ))}
+        </SectionCard>
+
+        <SectionCard id="zohar" title="זוהר (אדרא זוטא)">
+          {appData.zohar.map((paragraph: {aramaic: string, hebrew: string}, index: number) => (
+            <div key={index} style={{ marginBottom: '30px', paddingBottom: '20px', borderBottom: index !== appData.zohar.length - 1 ? '1px dashed #cbd5e0' : 'none' }}>
+              <p style={{ fontWeight: '700', marginBottom: '12px', color: theme.primary, textAlign: 'justify' }}>{paragraph.aramaic}</p>
+              <p style={{ color: '#4a5568', textAlign: 'justify' }}>{paragraph.hebrew}</p>
+            </div>
+          ))}
+        </SectionCard>
+
+        <SectionCard id="hashkava" title="השכבה">
+          <p style={{ textAlign: 'justify' }}>{appData.hashkava[gender].replace('{name}', name)}</p>
+        </SectionCard>
+
+        <SectionCard id="kaddish" title="קדיש יתום / על ישראל">
+          <p style={{ whiteSpace: 'pre-line', textAlign: 'center' }}>{appData.kaddish}</p>
+        </SectionCard>
+
+      </main>
+    </div>
+  );
+}
