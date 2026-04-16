@@ -1,4 +1,5 @@
-import { useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { appData } from './data';
 import './App.css';
 
@@ -17,7 +18,7 @@ export default function App() {
   const [hebDateLetters, setHebDateLetters] = useState('');
   const [hebDateNumbers, setHebDateNumbers] = useState('');
 
-  // פונקציית עזר להמרת מספר לגימטריה (עבור יום ושנה)
+  // Helper function for Gematria
   const toGematria = (num: number): string => {
     if (num <= 0) return '';
     let n = num % 1000;
@@ -76,7 +77,7 @@ export default function App() {
           
           setHebDateLetters(lettersStr);
           setHebDateNumbers(numbersStr);
-        } catch (e) {
+        } catch {
           setHebDateLetters('');
           setHebDateNumbers('');
         }
