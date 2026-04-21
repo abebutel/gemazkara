@@ -331,6 +331,7 @@ export default function App() {
             <li><a href="#mishnayot" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>לימוד משניות</a></li>
             <li><a href="#tehillim" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>תהילים</a></li>
             <li><a href="#zohar" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>זוהר (אדרא זוטא)</a></li>
+            <li><a href="#sium_tefillah" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>תפילה בסיום הלימוד</a></li>
             <li><a href="#hashkava" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>השכבה</a></li>
             <li><a href="#kaddish" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>קדיש</a></li>
           </ul>
@@ -361,6 +362,7 @@ export default function App() {
             <li><a href="#mishnayot" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>לימוד משניות</a></li>
             <li><a href="#tehillim" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>תהילים</a></li>
             <li><a href="#zohar" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>זוהר (אדרא זוטא)</a></li>
+            <li><a href="#sium_tefillah" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>תפילה בסיום הלימוד</a></li>
             <li><a href="#hashkava" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>השכבה</a></li>
             <li><a href="#kaddish" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text }}>קדיש יתום</a></li>
             <li style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
@@ -421,6 +423,18 @@ export default function App() {
               <p style={{ color: '#4a5568', textAlign: 'justify' }}>{paragraph.hebrew}</p>
             </div>
           ))}
+        </SectionCard>
+
+        <SectionCard id="sium_tefillah" title="תפילה כללית בסיום הלימוד">
+          {appData.siumTefillah[gender].replace('{name}', name).split('\n').map((paragraph: string, index: number) => (
+            <p key={index} style={{ textAlign: 'justify', marginBottom: '15px' }}>
+              {paragraph}
+            </p>
+          ))}
+          {/* Note from the PDF about Kaddish */}
+          <p style={{ textAlign: 'center', fontWeight: 'bold', color: theme.primary, marginTop: '25px', opacity: 0.8 }}>
+            (אם יש עשרה, אומרים רבי חנניה וקדיש על ישראל)
+          </p>
         </SectionCard>
 
         <SectionCard id="hashkava" title="השכבה">
