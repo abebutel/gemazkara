@@ -203,7 +203,7 @@ export default function App() {
 
         <div style={{ backgroundColor: theme.card, padding: '40px 30px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', width: '100%', maxWidth: '450px', textAlign: 'center', borderTop: `6px solid ${theme.primary}` }}>
           <h1 style={{ color: theme.primary, marginBottom: '15px', fontSize: '2.5rem', fontWeight: 800 }}>חוברת לימוד</h1>
-          <p style={{ color: '#718096', marginBottom: '35px', fontSize: '1.2rem' }}>ליום האזכרה</p>
+          <p style={{ color: '#718096', marginBottom: '35px', fontSize: '1.2rem' }}>לעילוי נשמת הנפטר</p>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', textAlign: 'right' }}>
             <div>
