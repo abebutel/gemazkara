@@ -46,16 +46,14 @@ export default function App() {
     }
   };
 
-  // NEW: Function to reset the app and go back to the homepage
   const handleReset = () => {
     setIsGenerated(false);
-    // Clears the URL parameters so it doesn't auto-generate again on refresh
     window.history.pushState({}, '', window.location.pathname);
   };
 
   const handleShare = async () => {
     const shareData = {
-      title: 'חוברת אזכרה',
+      title: 'חוברת לימוד',
       text: `חוברת לימוד משניות ותהילים לעילוי נשמת ${name}`,
       url: window.location.href
     };
@@ -210,7 +208,7 @@ export default function App() {
 
   if (!isGenerated) {
     return (
-      <div style={{ minHeight: '100vh', backgroundColor: theme.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: theme.uiFont, padding: '20px', direction: 'rtl', gap: '30px' }}>
+      <div style={{ minHeight: '100vh', backgroundColor: theme.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: theme.uiFont, padding: '20px', direction: 'rtl', gap: '20px' }}>
 
         <div style={{ backgroundColor: theme.card, padding: '40px 30px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', width: '100%', maxWidth: '450px', textAlign: 'center', borderTop: `6px solid ${theme.primary}` }}>
           <h1 style={{ color: theme.primary, marginBottom: '15px', fontSize: '2.5rem', fontWeight: 800 }}>חוברת לימוד</h1>
@@ -259,6 +257,11 @@ export default function App() {
             </button>
           </div>
         </div>
+
+        {/* Credit Link */}
+        <p style={{ color: '#718096', fontSize: '1.05rem', margin: '5px 0' }}>
+          תודה ל<a href="https://nosachteiman.co.il/" target="_blank" rel="noopener noreferrer" style={{ color: theme.primary, fontWeight: 'bold', textDecoration: 'underline' }}>נוסח תימן</a> על הטקסט
+        </p>
 
         <div style={{ backgroundColor: theme.card, padding: '25px', borderRadius: '16px', boxShadow: '0 6px 20px rgba(0,0,0,0.04)', width: '100%', maxWidth: '450px', textAlign: 'center', borderTop: `4px solid ${theme.accent}` }}>
           <h2 style={{ color: theme.primary, marginBottom: '10px', fontSize: '1.4rem', fontWeight: 700 }}>מחשבון תאריך עברי</h2>
@@ -318,7 +321,6 @@ export default function App() {
       ) : (
         <nav style={{ width: '280px', padding: '30px 20px', backgroundColor: theme.card, borderLeft: '1px solid #e2e8f0', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', fontFamily: theme.uiFont, boxShadow: '-2px 0 15px rgba(0,0,0,0.03)' }}>
 
-          {/* NEW: Desktop Back to Home Button */}
           <button onClick={handleReset} style={{ width: '100%', padding: '12px', marginBottom: '25px', borderRadius: '8px', border: `2px solid ${theme.primary}`, backgroundColor: '#f0f4f8', color: theme.primary, fontSize: '16px', fontWeight: 800, cursor: 'pointer', transition: '0.2s' }}>
             🏠 חזור לעמוד הראשי
           </button>
@@ -349,7 +351,6 @@ export default function App() {
         <nav style={{ position: 'fixed', top: '65px', left: 0, right: 0, backgroundColor: theme.card, padding: '20px', borderBottom: `3px solid ${theme.primary}`, zIndex: 999, boxShadow: '0 10px 20px rgba(0,0,0,0.1)', fontFamily: theme.uiFont }}>
           <ul style={{ listStyle: 'none', padding: 0, lineHeight: '3', margin: 0, fontSize: '1.2rem' }}>
 
-            {/* NEW: Mobile Back to Home Button */}
             <li style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '2px solid #e2e8f0' }}>
               <button onClick={() => { setIsMenuOpen(false); handleReset(); }} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: `2px solid ${theme.primary}`, backgroundColor: '#f0f4f8', color: theme.primary, fontSize: '16px', fontWeight: 800, cursor: 'pointer' }}>
                 🏠 חזור לעמוד הראשי
