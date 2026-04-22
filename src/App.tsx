@@ -70,6 +70,7 @@ export default function App() {
   };
 
   const handlePrint = () => {
+    // This triggers the native browser PDF generator, but our CSS will now format it like a book!
     window.print();
   };
 
@@ -160,7 +161,7 @@ export default function App() {
 
       if (h3Headers.some(h => cleanLine.includes(h.replace(/["”“'']/g, "")))) {
         return (
-          <h3 key={i} style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px', marginTop: '35px' }}>
+          <h3 key={i} className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px', marginTop: '35px' }}>
             ~ {line} ~
           </h3>
         );
@@ -182,14 +183,14 @@ export default function App() {
   };
 
   const SectionCard = ({ id, title, children }: { id: string, title: string, children: ReactNode }) => (
-    <section id={id} style={{
+    <section id={id} className="booklet-section" style={{
       backgroundColor: theme.card,
       padding: isMobile ? '25px 20px' : '45px',
       borderRadius: '12px',
       boxShadow: '0 4px 15px rgba(0,0,0,0.04)',
       marginBottom: '35px'
     }}>
-      <h2 style={{
+      <h2 className="print-section-title" style={{
         textAlign: 'center',
         color: theme.primary,
         fontFamily: theme.uiFont,
@@ -297,12 +298,13 @@ export default function App() {
             </div>
           )}
         </div>
-        {/* --- NEW SEO TEXT GOES HERE --- */}
+
+        {/* SEO Footer */}
         <footer style={{ maxWidth: '600px', textAlign: 'center', marginTop: '20px', color: '#718096', fontSize: '0.9rem', lineHeight: '1.6' }}>
           <strong>אודות המערכת:</strong><br />
           אפליקציית "אזכרה" מאפשרת יצירת חוברת אזכרה אישית להדפסה ולשיתוף בחינם. המערכת מפיקה אוטומטית סדר לימוד משניות לעילוי נשמת הנפטר (לפי אותיות השם), פרקי תהילים, אותיות נשמה, אדרא זוטא ותפילות השכבה וקדיש. בנוסף, האתר כולל מחשבון תאריך עברי לאזכרה לאיתור מדויק של יום הפטירה.
         </footer>
-        {/* ------------------------------ */}
+
       </div>
     );
   }
@@ -313,8 +315,74 @@ export default function App() {
   return (
     <div style={{ display: 'flex', direction: 'rtl', fontFamily: theme.bookFont, minHeight: '100vh', backgroundColor: theme.bg, flexDirection: isMobile ? 'column' : 'row' }}>
 
+      {/* ========================================
+        PRINT CSS: THIS MAGICALLY FORMATS THE PDF 
+        ========================================
+      */}
+      <style>{`
+        @media print {
+          /* Hide all Web UI */
+          header, nav, .no-print {
+            display: none !important;
+          }
+          
+          /* Reset colors and backgrounds for clean printing */
+          body, html, main, div {
+            background-color: white !important;
+            color: black !important;
+          }
+          
+          /* Force sections to start on new pages and add the requested top/bottom borders */
+          .booklet-section {
+            page-break-before: always;
+            box-shadow: none !important;
+            padding: 40px 0 !important;
+            border-top: 3px solid #1a365d !important;
+            border-bottom: 3px solid #1a365d !important;
+            border-radius: 0 !important;
+            margin-bottom: 0 !important;
+          }
+
+          /* Ensure TOC and Back Cover do NOT have borders */
+          .print-toc-page, .print-back-cover {
+            page-break-before: always;
+            border: none !important;
+            padding: 40px 0 !important;
+          }
+
+          /* General typography adjustments for paper */
+          p {
+            line-height: 2 !important;
+            font-size: 14pt !important;
+          }
+          .print-heading {
+            color: #d4af37 !important; /* Keep the gold accent */
+          }
+          .print-section-title {
+            color: #1a365d !important;
+            border-bottom-color: #d4af37 !important;
+          }
+
+          /* Show the elements we specifically built for printing */
+          .print-only {
+            display: flex !important;
+          }
+          
+          /* Set standard margins */
+          @page {
+            margin: 2cm;
+          }
+        }
+
+        /* Hide print-specific elements when viewing on screen */
+        .print-only {
+          display: none;
+        }
+      `}</style>
+
+      {/* Screen Mobile Header */}
       {isMobile ? (
-        <header style={{ position: 'sticky', top: 0, backgroundColor: theme.card, borderBottom: '1px solid #e2e8f0', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1000, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+        <header className="no-print" style={{ position: 'sticky', top: 0, backgroundColor: theme.card, borderBottom: '1px solid #e2e8f0', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1000, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
           <button onClick={() => setIsMenuOpen(!isMenuOpen)} style={{ background: 'none', border: 'none', fontSize: '28px', color: theme.primary, cursor: 'pointer' }}>
             ☰
           </button>
@@ -325,7 +393,8 @@ export default function App() {
           </div>
         </header>
       ) : (
-        <nav style={{ width: '280px', padding: '30px 20px', backgroundColor: theme.card, borderLeft: '1px solid #e2e8f0', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', fontFamily: theme.uiFont, boxShadow: '-2px 0 15px rgba(0,0,0,0.03)' }}>
+        /* Screen Desktop Sidebar */
+        <nav className="no-print" style={{ width: '280px', padding: '30px 20px', backgroundColor: theme.card, borderLeft: '1px solid #e2e8f0', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', fontFamily: theme.uiFont, boxShadow: '-2px 0 15px rgba(0,0,0,0.03)' }}>
 
           <button onClick={handleReset} style={{ width: '100%', padding: '12px', marginBottom: '25px', borderRadius: '8px', border: `2px solid ${theme.primary}`, backgroundColor: '#f0f4f8', color: theme.primary, fontSize: '16px', fontWeight: 800, cursor: 'pointer', transition: '0.2s' }}>
             🏠 חזור לעמוד הראשי
@@ -337,7 +406,7 @@ export default function App() {
             <li><a href="#mishnayot" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>לימוד משניות</a></li>
             <li><a href="#tehillim" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>תהילים</a></li>
             <li><a href="#zohar" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>זוהר (אדרא זוטא)</a></li>
-            <li><a href="#sium_tefillah" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>תפילה בסיום הלימוד</a></li>
+            <li><a href="#sium_tefillah" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>תפילה בסיום הלימוד</a></li>
             <li><a href="#hashkava" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>השכבה</a></li>
             <li><a href="#kaddish" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>קדיש</a></li>
           </ul>
@@ -354,8 +423,9 @@ export default function App() {
         </nav>
       )}
 
+      {/* Screen Mobile Menu */}
       {isMobile && isMenuOpen && (
-        <nav style={{ position: 'fixed', top: '65px', left: 0, right: 0, backgroundColor: theme.card, padding: '20px', borderBottom: `3px solid ${theme.primary}`, zIndex: 999, boxShadow: '0 10px 20px rgba(0,0,0,0.1)', fontFamily: theme.uiFont }}>
+        <nav className="no-print" style={{ position: 'fixed', top: '65px', left: 0, right: 0, backgroundColor: theme.card, padding: '20px', borderBottom: `3px solid ${theme.primary}`, zIndex: 999, boxShadow: '0 10px 20px rgba(0,0,0,0.1)', fontFamily: theme.uiFont }}>
           <ul style={{ listStyle: 'none', padding: 0, lineHeight: '3', margin: 0, fontSize: '1.2rem' }}>
 
             <li style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '2px solid #e2e8f0' }}>
@@ -379,7 +449,26 @@ export default function App() {
         </nav>
       )}
 
+      {/* Main Content Area */}
       <main style={{ flex: 1, padding: isMobile ? '20px' : '40px', fontSize: `${fontSize}px`, maxWidth: '900px', margin: '0 auto', lineHeight: '1.9' }}>
+
+        {/* PRINT ONLY: Table of Contents Page */}
+        <div className="print-only print-toc-page" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center' }}>
+          <h1 style={{ color: theme.primary, fontSize: '40pt', marginBottom: '10px', fontFamily: theme.uiFont }}>חוברת אזכרה</h1>
+          <p style={{ fontSize: '24pt', marginBottom: '60px', color: '#4a5568' }}>לעילוי נשמת {name}</p>
+
+          <h2 style={{ color: theme.primary, fontSize: '28pt', borderBottom: `3px solid ${theme.accent}`, paddingBottom: '15px', marginBottom: '40px', display: 'inline-block' }}>תוכן עניינים</h2>
+
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '20pt', lineHeight: '3' }}>
+            <li>תפילה קודם הלימוד</li>
+            <li>לימוד משניות</li>
+            <li>תהילים</li>
+            <li>זוהר</li>
+            <li>תפילה בסיום הלימוד</li>
+            <li>השכבה</li>
+            <li>קדיש</li>
+          </ul>
+        </div>
 
         <SectionCard id="tefillah" title="תפילה קודם הלימוד">
           <p style={{ textAlign: 'justify' }}>{appData.tefillah[gender].replace('{name}', name)}</p>
@@ -389,7 +478,7 @@ export default function App() {
           <p style={{ textAlign: 'justify', marginBottom: '35px' }}>{appData.mishnahIntro}</p>
           {letters.map((char: string, index: number) => (
             <div key={index} style={{ marginBottom: '35px' }}>
-              <h3 style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
+              <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
               {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <p key={i} style={{ marginBottom: '12px', textAlign: 'justify' }}>{text}</p>) : <p>הטקסט יתווסף בהמשך</p>}
             </div>
           ))}
@@ -403,15 +492,14 @@ export default function App() {
 
           {letters.map((char: string, index: number) => (
             <div key={index} style={{ marginBottom: '30px' }}>
-              <h3 style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
+              <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
               {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <p key={i} style={{ marginBottom: '12px', textAlign: 'center' }}>{text}</p>) : <p>הטקסט יתווסף בהמשך</p>}
             </div>
           ))}
 
-          {/* פרקי תהילים של "נשמה" */}
           {includeNeshama && (
             <div style={{ marginTop: '50px', paddingTop: '30px', borderTop: '2px dashed #e2e8f0' }}>
-              <h3 style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '25px' }}>~ אותיות "נשמה" ~</h3>
+              <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '25px' }}>~ אותיות "נשמה" ~</h3>
               {['נ', 'ש', 'מ', 'ה'].map((char: string, index: number) => (
                 <div key={`neshama-${index}`} style={{ marginBottom: '30px' }}>
                   <h4 style={{ color: theme.primary, textAlign: 'center', fontSize: '1.5rem', marginBottom: '15px' }}>~ אות {char} ~</h4>
@@ -437,7 +525,6 @@ export default function App() {
               {paragraph}
             </p>
           ))}
-          {/* Note from the PDF about Kaddish */}
           <p style={{ textAlign: 'center', fontWeight: 'bold', color: theme.primary, marginTop: '25px', opacity: 0.8 }}>
             (אם יש עשרה, אומרים רבי חנניה וקדיש על ישראל)
           </p>
@@ -450,6 +537,19 @@ export default function App() {
         <SectionCard id="kaddish" title="קדיש יתום / על ישראל">
           <p style={{ whiteSpace: 'pre-line', textAlign: 'center' }}>{appData.kaddish}</p>
         </SectionCard>
+
+        {/* PRINT ONLY: Back Cover Page */}
+        <div className="print-only print-back-cover" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center', fontFamily: theme.uiFont }}>
+          <h2 style={{ color: theme.primary, fontSize: '24pt', marginBottom: '15px' }}>הודפס ע"י www.azkarapp.com</h2>
+          <p style={{ fontSize: '16pt', color: '#4a5568', marginBottom: '40px' }}>ליצירת חוברת משלכם, סרקו את הקוד:</p>
+
+          {/* We use a free, reliable API to generate the QR code instantly without needing extra code packages */}
+          <img
+            src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://azkarapp.com"
+            alt="QR Code to azkarapp.com"
+            style={{ width: '200px', height: '200px', border: '1px solid #e2e8f0', padding: '10px', borderRadius: '8px', backgroundColor: 'white' }}
+          />
+        </div>
 
       </main>
     </div>
