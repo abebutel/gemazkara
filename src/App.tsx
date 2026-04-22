@@ -70,7 +70,6 @@ export default function App() {
   };
 
   const handlePrint = () => {
-    // This triggers the native browser PDF generator, but our CSS will now format it like a book!
     window.print();
   };
 
@@ -454,12 +453,12 @@ export default function App() {
 
         {/* PRINT ONLY: Table of Contents Page */}
         <div className="print-only print-toc-page" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center' }}>
-          <h1 style={{ color: theme.primary, fontSize: '40pt', marginBottom: '10px', fontFamily: theme.uiFont }}>חוברת אזכרה</h1>
-          <p style={{ fontSize: '24pt', marginBottom: '60px', color: '#4a5568' }}>לעילוי נשמת {name}</p>
+          <h1 style={{ color: theme.primary, fontSize: '40pt', marginBottom: '10px', fontFamily: theme.uiFont }}>חוברת לימוד</h1>
+          <p style={{ fontSize: '24pt', marginBottom: '40px', color: '#4a5568' }}>לעילוי נשמת {name}</p>
 
-          <h2 style={{ color: theme.primary, fontSize: '28pt', borderBottom: `3px solid ${theme.accent}`, paddingBottom: '15px', marginBottom: '40px', display: 'inline-block' }}>תוכן עניינים</h2>
+          <h2 style={{ color: theme.primary, fontSize: '28pt', borderBottom: `3px solid ${theme.accent}`, paddingBottom: '15px', marginBottom: '30px', display: 'inline-block' }}>תוכן עניינים</h2>
 
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '20pt', lineHeight: '3' }}>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '20pt', lineHeight: '2.2' }}>
             <li>תפילה קודם הלימוד</li>
             <li>לימוד משניות</li>
             <li>תהילים</li>
@@ -540,10 +539,9 @@ export default function App() {
 
         {/* PRINT ONLY: Back Cover Page */}
         <div className="print-only print-back-cover" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center', fontFamily: theme.uiFont }}>
-          <h2 style={{ color: theme.primary, fontSize: '24pt', marginBottom: '15px' }}>הודפס ע"י www.azkarapp.com</h2>
+          <h2 style={{ color: theme.primary, fontSize: '24pt', marginBottom: '15px' }}>הוכן ע"י www.azkarapp.com</h2>
           <p style={{ fontSize: '16pt', color: '#4a5568', marginBottom: '40px' }}>ליצירת חוברת משלכם, סרקו את הקוד:</p>
 
-          {/* We use a free, reliable API to generate the QR code instantly without needing extra code packages */}
           <img
             src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://azkarapp.com"
             alt="QR Code to azkarapp.com"
