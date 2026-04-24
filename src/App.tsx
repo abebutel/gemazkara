@@ -530,7 +530,19 @@ export default function App() {
         </SectionCard>
 
         <SectionCard id="hashkava" title="השכבה">
-          <p style={{ textAlign: 'justify' }}>{appData.hashkava[gender].replace('{name}', name)}</p>
+          {appData.hashkava[gender].replace('{name}', name).split('\n').map((paragraph: string, index: number) => {
+            // מפצל את הטקסט כדי לזהות חלקים שבתוך סוגריים ולהפוך אותם לפחות מודגשים
+            const parts = paragraph.split(/(\([^)]+\))/g);
+            return (
+              <p key={index} style={{ textAlign: 'justify', marginBottom: '15px' }}>
+                {parts.map((part, i) =>
+                  part.startsWith('(') && part.endsWith(')') ?
+                    <span key={i} style={{ opacity: 0.65 }}>{part}</span> :
+                    <span key={i}>{part}</span>
+                )}
+              </p>
+            );
+          })}
         </SectionCard>
 
         <SectionCard id="kaddish" title="קדיש יתום / על ישראל">
