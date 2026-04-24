@@ -131,7 +131,9 @@ export default function App() {
     return finalMap[char] || char;
   };
 
-  const letters = name.replace(/[^א-ת]/g, '').split('').map(mapLetter);
+  // מזהה את המילים בן/בת/בר וחותך את השם כדי לייצר פרקים רק לשם הפרטי
+  const firstNameOnly = name.split(/\s+(?:בן|בת|בר)\s+/)[0];
+  const letters = firstNameOnly.replace(/[^א-ת]/g, '').split('').map(mapLetter);
 
   const theme = {
     bg: '#f9f6f0',
