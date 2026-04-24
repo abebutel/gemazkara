@@ -470,7 +470,7 @@ export default function App() {
         </div>
 
         <SectionCard id="tefillah" title="תפילה קודם הלימוד">
-          <p style={{ textAlign: 'justify' }}>{appData.tefillah[gender].replace('{name}', name)}</p>
+          <p style={{ textAlign: 'justify' }}>{appData.tefillah[gender].replace(/\{\s*name\s*\}/g, name)}</p>
         </SectionCard>
 
         <SectionCard id="mishnayot" title="לימוד משניות">
@@ -519,7 +519,7 @@ export default function App() {
         </SectionCard>
 
         <SectionCard id="sium_tefillah" title="תפילה כללית בסיום הלימוד">
-          {appData.siumTefillah[gender].replace('{name}', name).split('\n').map((paragraph: string, index: number) => (
+          {appData.siumTefillah[gender].replace(/\{\s*name\s*\}/g, name).split('\n').map((paragraph: string, index: number) => (
             <p key={index} style={{ textAlign: 'justify', marginBottom: '15px' }}>
               {paragraph}
             </p>
@@ -530,7 +530,7 @@ export default function App() {
         </SectionCard>
 
         <SectionCard id="hashkava" title="השכבה">
-          {appData.hashkava[gender].replace('{name}', name).split('\n').map((paragraph: string, index: number) => {
+          {appData.hashkava[gender].replace(/\{\s*name\s*\}/g, name).split('\n').map((paragraph: string, index: number) => {
             // מפצל את הטקסט כדי לזהות חלקים שבתוך סוגריים ולהפוך אותם לפחות מודגשים
             const parts = paragraph.split(/(\([^)]+\))/g);
             return (
