@@ -8,10 +8,7 @@ export default function App() {
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [includeNeshama, setIncludeNeshama] = useState(false);
   const [includeZohar, setIncludeZohar] = useState(false);
-
-  // CHANGED: The default is now 'shami'
   const [nusach, setNusach] = useState<'baladi' | 'shami'>('shami');
-
   const [isGenerated, setIsGenerated] = useState(false);
   const [fontSize, setFontSize] = useState(20);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -146,8 +143,8 @@ export default function App() {
     bookFont: "'Frank Ruhl Libre', serif"
   };
 
-  // UPGRADED: Now handles line breaks and custom ~ or * headers!
-  const renderFormattedText = (text: string) => {
+  // מנוע העיצוב החכם - מעבד כל טקסט ומוסיף כותרות, צבעים ועיצוב דינמי
+  const renderFormattedText = (text: string, forceCenter: boolean = false) => {
     const legacyH3 = ['פרק ״יש מעלין״', 'אותיות ״נשמה״'];
     const legacyBold = ["תפילה בסיום לימוד המשניות"];
 
@@ -158,12 +155,9 @@ export default function App() {
         return <br key={i} />;
       }
 
-      // Check for dynamic gold headers (wrapped in ~)
+      // זיהוי כותרת זהב עם סימן ~
       const isDynamicH3 = cleanLine.startsWith('~') && cleanLine.endsWith('~');
-      if (isDynamicH3) {
-        cleanLine = cleanLine.substring(1, cleanLine.length - 1).trim();
-      }
-
+      if (isDynamicH3) cleanLine = cleanLine.substring(1, cleanLine.length - 1).trim();
       const isLegacyH3 = legacyH3.some(h => line.replace(/["”“']/g, "").includes(h.replace(/["”“']/g, "")));
 
       if (isDynamicH3 || isLegacyH3) {
@@ -178,27 +172,41 @@ export default function App() {
         );
       }
 
-      // Check for dynamic bold headers (wrapped in *)
+      // זיהוי כותרת כחולה עם סימן *
       const isDynamicBold = cleanLine.startsWith('*') && cleanLine.endsWith('*');
-      if (isDynamicBold) {
-        cleanLine = cleanLine.substring(1, cleanLine.length - 1).trim();
-      }
-
+      if (isDynamicBold) cleanLine = cleanLine.substring(1, cleanLine.length - 1).trim();
       const isLegacyBold = legacyBold.some(h => line.replace(/["”“']/g, "").includes(h.replace(/["”“']/g, "")));
       const isBoldHeader = isDynamicBold || isLegacyBold;
+
+      // מנגנון חכם: אם השורה מכילה אותיות בעברית אך *ללא ניקוד*, היא מוגדרת אוטומטית כהוראה
+      const hasHebrew = /[\u05D0-\u05EA]/.test(cleanLine);
+      const hasNikud = /[\u0591-\u05C7]/.test(cleanLine);
+      const isInstructionLine = hasHebrew && !hasNikud && !isBoldHeader;
+
+      // חיפוש סוגריים בתוך השורה כדי להחליש אותם
+      const parts = (isDynamicBold ? cleanLine : line).split(/(\([^)]+\))/g);
 
       return (
         <p
           key={i}
           style={{
             fontWeight: isBoldHeader ? '700' : '400',
-            fontSize: isBoldHeader ? `${fontSize + 4}px` : `${fontSize}px`,
+            // טקסט הוראות ללא ניקוד מקבל גופן קטן יותר
+            fontSize: isBoldHeader ? `${fontSize + 4}px` : (isInstructionLine ? `${Math.max(14, fontSize - 3)}px` : `${fontSize}px`),
             marginTop: isBoldHeader ? '35px' : '5px',
-            color: isBoldHeader ? theme.primary : theme.text,
-            textAlign: isBoldHeader ? 'center' : 'justify'
+            marginBottom: isInstructionLine ? '5px' : '15px',
+            // טקסט הוראות נצבע באפור
+            color: isBoldHeader ? theme.primary : (isInstructionLine ? '#718096' : theme.text),
+            textAlign: isBoldHeader || forceCenter || isInstructionLine ? 'center' : 'justify',
+            lineHeight: isInstructionLine ? '1.5' : '1.9'
           }}
         >
-          {isDynamicBold ? cleanLine : line}
+          {parts.map((part, j) =>
+            // אם זה בתוך סוגריים - להוריד שקיפות
+            part.startsWith('(') && part.endsWith(')') ?
+              <span key={j} style={{ opacity: 0.65, fontSize: `${Math.max(14, fontSize - 2)}px` }}>{part}</span> :
+              <span key={j}>{part}</span>
+          )}
         </p>
       );
     });
@@ -297,8 +305,8 @@ export default function App() {
                 onChange={(e) => setNusach(e.target.value as 'baladi' | 'shami')}
                 style={{ width: '100%', padding: '14px', fontSize: '16px', borderRadius: '8px', border: '1px solid #cbd5e0', backgroundColor: '#f8fafc', boxSizing: 'border-box', fontFamily: theme.uiFont, cursor: 'pointer' }}
               >
-                <option value="baladi">בלדי</option>
                 <option value="shami">שאמי</option>
+                <option value="baladi">בלדי</option>
               </select>
             </div>
 
@@ -500,15 +508,15 @@ export default function App() {
         </div>
 
         <SectionCard id="tefillah" title="תפילה קודם הלימוד">
-          <p style={{ textAlign: 'justify' }}>{appData.tefillah[gender].replace(/\{\s*name\s*\}/g, name)}</p>
+          {renderFormattedText(appData.tefillah[gender].replace(/\{\s*name\s*\}/g, name))}
         </SectionCard>
 
         <SectionCard id="mishnayot" title="לימוד משניות">
-          <p style={{ textAlign: 'justify', marginBottom: '35px' }}>{appData.mishnahIntro}</p>
+          {renderFormattedText(appData.mishnahIntro)}
           {letters.map((char: string, index: number) => (
             <div key={index} style={{ marginBottom: '35px' }}>
               <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
-              {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <p key={i} style={{ marginBottom: '12px', textAlign: 'justify' }}>{text}</p>) : <p>הטקסט יתווסף בהמשך</p>}
+              {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text)}</div>) : <p>הטקסט יתווסף בהמשך</p>}
             </div>
           ))}
           <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
@@ -521,7 +529,7 @@ export default function App() {
           {letters.map((char: string, index: number) => (
             <div key={index} style={{ marginBottom: '30px' }}>
               <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
-              {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <p key={i} style={{ marginBottom: '12px', textAlign: 'center' }}>{text}</p>) : <p>הטקסט יתווסף בהמשך</p>}
+              {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, true)}</div>) : <p>הטקסט יתווסף בהמשך</p>}
             </div>
           ))}
           {includeNeshama && (
@@ -530,7 +538,7 @@ export default function App() {
               {['נ', 'ש', 'מ', 'ה'].map((char: string, index: number) => (
                 <div key={`neshama-${index}`} style={{ marginBottom: '30px' }}>
                   <h4 style={{ color: theme.primary, textAlign: 'center', fontSize: '1.5rem', marginBottom: '15px' }}>~ אות {char} ~</h4>
-                  {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <p key={i} style={{ marginBottom: '12px', textAlign: 'center' }}>{text}</p>) : <p>הטקסט יתווסף בהמשך</p>}
+                  {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, true)}</div>) : <p>הטקסט יתווסף בהמשך</p>}
                 </div>
               ))}
             </div>
@@ -549,27 +557,14 @@ export default function App() {
         )}
 
         <SectionCard id="sium_tefillah" title="תפילה כללית בסיום הלימוד">
-          {appData.siumTefillah[gender].replace(/\{\s*name\s*\}/g, name).split('\n').map((paragraph: string, index: number) => (
-            <p key={index} style={{ textAlign: 'justify', marginBottom: '15px' }}>{paragraph}</p>
-          ))}
+          {renderFormattedText(appData.siumTefillah[gender].replace(/\{\s*name\s*\}/g, name))}
           <p style={{ textAlign: 'center', fontWeight: 'bold', color: theme.primary, marginTop: '25px', opacity: 0.8 }}>
             (אם יש עשרה, אומרים רבי חנניה וקדיש על ישראל)
           </p>
         </SectionCard>
 
         <SectionCard id="hashkava" title="השכבה">
-          {appData.hashkava[gender].replace(/\{\s*name\s*\}/g, name).split('\n').map((paragraph: string, index: number) => {
-            const parts = paragraph.split(/(\([^)]+\))/g);
-            return (
-              <p key={index} style={{ textAlign: 'justify', marginBottom: '15px' }}>
-                {parts.map((part, i) =>
-                  part.startsWith('(') && part.endsWith(')') ?
-                    <span key={i} style={{ opacity: 0.65 }}>{part}</span> :
-                    <span key={i}>{part}</span>
-                )}
-              </p>
-            );
-          })}
+          {renderFormattedText(appData.hashkava[gender].replace(/\{\s*name\s*\}/g, name))}
         </SectionCard>
 
         <SectionCard id="kaddish" title="קדיש">
@@ -577,11 +572,10 @@ export default function App() {
             <h4 className="no-print" style={{ color: theme.primary, marginBottom: '10px', fontSize: '1.2rem', opacity: 0.8 }}>
               נוסח {nusach === 'baladi' ? 'בלדי' : 'שאמי'}
             </h4>
-            {appData.kaddish ? renderFormattedText((appData.kaddish as Record<string, string>)[nusach]) : <p>הטקסט יתווסף בהמשך</p>}
+            {appData.kaddish ? renderFormattedText((appData.kaddish as Record<string, string>)[nusach], true) : <p>הטקסט יתווסף בהמשך</p>}
           </div>
         </SectionCard>
 
-        {/* Upgraded Prayer Sections that now use the Dynamic Header Formatter! */}
         <SectionCard id="mincha" title="תפילת מנחה">
           {appData.mincha ? renderFormattedText((appData.mincha as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך') : <p>הטקסט יתווסף בהמשך</p>}
         </SectionCard>
