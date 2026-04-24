@@ -7,8 +7,8 @@ export default function App() {
   const [name, setName] = useState('');
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [includeNeshama, setIncludeNeshama] = useState(false);
-  const [includeZohar, setIncludeZohar] = useState(false); // New: Zohar option
-  const [nusach, setNusach] = useState<'baladi' | 'shami'>('baladi'); // New: Nusach option
+  const [includeZohar, setIncludeZohar] = useState(false);
+  const [nusach, setNusach] = useState<'baladi' | 'shami'>('baladi');
   const [isGenerated, setIsGenerated] = useState(false);
   const [fontSize, setFontSize] = useState(20);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -221,6 +221,11 @@ export default function App() {
 
   return (
     <div style={{ display: 'flex', direction: 'rtl', fontFamily: theme.bookFont, minHeight: '100vh', backgroundColor: theme.bg, flexDirection: isMobile ? 'column' : 'row' }}>
+
+      {/* ========================================
+        PRINT CSS
+        ========================================
+      */}
       <style>{`
         @media print {
           header, nav, .no-print { display: none !important; }
@@ -236,94 +241,116 @@ export default function App() {
         .print-only { display: none; }
       `}</style>
 
-      {/* Navigation */}
-      <nav className="no-print" style={{ width: '280px', padding: '30px 20px', backgroundColor: theme.card, borderLeft: '1px solid #e2e8f0', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', fontFamily: theme.uiFont }}>
-        <button onClick={handleReset} style={{ width: '100%', padding: '12px', marginBottom: '25px', borderRadius: '8px', border: `2px solid ${theme.primary}`, backgroundColor: '#f0f4f8', color: theme.primary, fontSize: '16px', fontWeight: 800, cursor: 'pointer' }}>🏠 חזור לעמוד הראשי</button>
-        <h3 style={{ color: theme.primary, fontSize: '1.4rem', borderBottom: `2px solid ${theme.accent}`, paddingBottom: '10px', marginBottom: '20px' }}>תוכן עניינים</h3>
-        <ul style={{ listStyle: 'none', padding: 0, lineHeight: '2.5', fontSize: '1.1rem' }}>
-          <li><a href="#tefillah" style={{ textDecoration: 'none', color: '#4a5568' }}>תפילה קודם הלימוד</a></li>
-          <li><a href="#mishnayot" style={{ textDecoration: 'none', color: '#4a5568' }}>לימוד משניות</a></li>
-          <li><a href="#tehillim" style={{ textDecoration: 'none', color: '#4a5568' }}>תהילים</a></li>
-          {includeZohar && <li><a href="#zohar" style={{ textDecoration: 'none', color: '#4a5568' }}>זוהר (אדרא זוטא)</a></li>}
-          <li><a href="#sium_tefillah" style={{ textDecoration: 'none', color: '#4a5568' }}>תפילה בסיום הלימוד</a></li>
-          <li><a href="#hashkava" style={{ textDecoration: 'none', color: '#4a5568' }}>השכבה</a></li>
-          <li><a href="#kaddish" style={{ textDecoration: 'none', color: '#4a5568' }}>קדיש</a></li>
-          <li><a href="#mincha" style={{ textDecoration: 'none', color: '#4a5568' }}>מנחה</a></li>
-          <li><a href="#arvit" style={{ textDecoration: 'none', color: '#4a5568' }}>ערבית</a></li>
-        </ul>
-      </nav>
+      {/* Screen Mobile Header */}
+      {isMobile ? (
+        <header className="no-print" style={{ position: 'sticky', top: 0, backgroundColor: theme.card, borderBottom: '1px solid #e2e8f0', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1000, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+          <button onClick={() => setIsMenuOpen(!isMenuOpen)} style={{ background: 'none', border: 'none', fontSize: '28px', color: theme.primary, cursor: 'pointer' }}>
+            ☰
+          </button>
+          <div style={{ display: 'flex', gap: '8px', fontFamily: theme.uiFont, alignItems: 'center' }}>
+            <button onClick={handleShare} style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', backgroundColor: theme.primary, color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>🔗 שתף</button>
+            <button onClick={() => setFontSize(f => f + 2)} style={{ padding: '6px 14px', borderRadius: '6px', border: `1px solid ${theme.primary}`, color: theme.primary, background: 'transparent', fontSize: '16px', fontWeight: 600 }}>A+</button>
+            <button onClick={() => setFontSize(f => Math.max(14, f - 2))} style={{ padding: '6px 14px', borderRadius: '6px', border: `1px solid ${theme.primary}`, color: theme.primary, background: 'transparent', fontSize: '16px', fontWeight: 600 }}>A-</button>
+          </div>
+        </header>
+      ) : (
+        /* Screen Desktop Sidebar */
+        <nav className="no-print" style={{ width: '280px', padding: '30px 20px', backgroundColor: theme.card, borderLeft: '1px solid #e2e8f0', position: 'sticky', top: 0, height: '100vh', overflowY: 'auto', fontFamily: theme.uiFont, boxShadow: '-2px 0 15px rgba(0,0,0,0.03)' }}>
+          <button onClick={handleReset} style={{ width: '100%', padding: '12px', marginBottom: '25px', borderRadius: '8px', border: `2px solid ${theme.primary}`, backgroundColor: '#f0f4f8', color: theme.primary, fontSize: '16px', fontWeight: 800, cursor: 'pointer', transition: '0.2s' }}>
+            🏠 חזור לעמוד הראשי
+          </button>
+          <h3 style={{ color: theme.primary, fontSize: '1.4rem', borderBottom: `2px solid ${theme.accent}`, paddingBottom: '10px', marginBottom: '20px' }}>תוכן עניינים</h3>
+          <ul style={{ listStyle: 'none', padding: 0, lineHeight: '2.5', fontSize: '1.1rem' }}>
+            <li><a href="#tefillah" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>תפילה קודם הלימוד</a></li>
+            <li><a href="#mishnayot" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>לימוד משניות</a></li>
+            <li><a href="#tehillim" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>תהילים</a></li>
+            {includeZohar && <li><a href="#zohar" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>זוהר (אדרא זוטא)</a></li>}
+            <li><a href="#sium_tefillah" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>תפילה בסיום הלימוד</a></li>
+            <li><a href="#hashkava" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>השכבה</a></li>
+            <li><a href="#kaddish" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>קדיש</a></li>
+            <li><a href="#mincha" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>מנחה</a></li>
+            <li><a href="#arvit" style={{ textDecoration: 'none', color: '#4a5568', display: 'block' }}>ערבית</a></li>
+          </ul>
 
+          <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
+            <h4 style={{ color: theme.primary, marginBottom: '15px' }}>גודל טקסט</h4>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+              <button onClick={() => setFontSize(f => f + 2)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: `1px solid ${theme.primary}`, color: theme.primary, background: 'transparent', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>A+</button>
+              <button onClick={() => setFontSize(f => Math.max(14, f - 2))} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: `1px solid ${theme.primary}`, color: theme.primary, background: 'transparent', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>A-</button>
+            </div>
+            <button onClick={handleShare} style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '6px', border: 'none', backgroundColor: theme.primary, color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>🔗 שתף קישור לחוברת</button>
+            <button onClick={handlePrint} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: `1px solid ${theme.primary}`, backgroundColor: 'transparent', color: theme.primary, fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>📥 הורד חוברת למכשיר</button>
+          </div>
+        </nav>
+      )}
+
+      {/* Screen Mobile Menu */}
+      {isMobile && isMenuOpen && (
+        <nav className="no-print" style={{ position: 'fixed', top: '65px', left: 0, right: 0, backgroundColor: theme.card, padding: '20px', borderBottom: `3px solid ${theme.primary}`, zIndex: 999, boxShadow: '0 10px 20px rgba(0,0,0,0.1)', fontFamily: theme.uiFont }}>
+          <ul style={{ listStyle: 'none', padding: 0, lineHeight: '3', margin: 0, fontSize: '1.2rem' }}>
+            <li style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '2px solid #e2e8f0' }}>
+              <button onClick={() => { setIsMenuOpen(false); handleReset(); }} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: `2px solid ${theme.primary}`, backgroundColor: '#f0f4f8', color: theme.primary, fontSize: '16px', fontWeight: 800, cursor: 'pointer' }}>
+                🏠 חזור לעמוד הראשי
+              </button>
+            </li>
+            <li><a href="#tefillah" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>תפילה קודם הלימוד</a></li>
+            <li><a href="#mishnayot" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>לימוד משניות</a></li>
+            <li><a href="#tehillim" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>תהילים</a></li>
+            {includeZohar && <li><a href="#zohar" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>זוהר (אדרא זוטא)</a></li>}
+            <li><a href="#sium_tefillah" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>תפילה בסיום הלימוד</a></li>
+            <li><a href="#hashkava" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>השכבה</a></li>
+            <li><a href="#kaddish" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>קדיש</a></li>
+            <li><a href="#mincha" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>מנחה</a></li>
+            <li><a href="#arvit" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text }}>ערבית</a></li>
+            <li style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
+              <button onClick={() => { setIsMenuOpen(false); handleShare(); }} style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '6px', border: 'none', backgroundColor: theme.primary, color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>🔗 שתף קישור לחוברת</button>
+              <button onClick={() => { setIsMenuOpen(false); handlePrint(); }} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: `1px solid ${theme.primary}`, backgroundColor: 'transparent', color: theme.primary, fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>📥 הורד חוברת למכשיר</button>
+            </li>
+          </ul>
+        </nav>
+      )}
+
+      {/* Main Content Area */}
       <main style={{ flex: 1, padding: isMobile ? '20px' : '40px', fontSize: `${fontSize}px`, maxWidth: '900px', margin: '0 auto', lineHeight: '1.9' }}>
 
-        {/* Print TOC */}
+        {/* PRINT ONLY: Table of Contents Page */}
         <div className="print-only print-toc-page" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center' }}>
-          <h1 style={{ color: theme.primary, fontSize: '40pt', marginBottom: '10px' }}>חוברת לימוד</h1>
-          <p style={{ fontSize: '24pt', marginBottom: '40px' }}>לעילוי נשמת {name}</p>
-          <h2 style={{ color: theme.primary, fontSize: '28pt', borderBottom: `3px solid ${theme.accent}`, paddingBottom: '15px', marginBottom: '30px' }}>תוכן עניינים</h2>
-          <ul style={{ listStyle: 'none', padding: 0, fontSize: '20pt', lineHeight: '2.2' }}>
-            <li>תפילה קודם הלימוד</li><li>לימוד משניות</li><li>תהילים</li>
+          <h1 style={{ color: theme.primary, fontSize: '40pt', marginBottom: '10px', fontFamily: theme.uiFont }}>חוברת לימוד</h1>
+          <p style={{ fontSize: '24pt', marginBottom: '40px', color: '#4a5568' }}>לעילוי נשמת {name}</p>
+
+          <h2 style={{ color: theme.primary, fontSize: '28pt', borderBottom: `3px solid ${theme.accent}`, paddingBottom: '15px', marginBottom: '30px', display: 'inline-block' }}>תוכן עניינים</h2>
+
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: '20pt', lineHeight: '2.2' }}>
+            <li>תפילה קודם הלימוד</li>
+            <li>לימוד משניות</li>
+            <li>תהילים</li>
             {includeZohar && <li>זוהר</li>}
-            <li>תפילה בסיום הלימוד</li><li>השכבה</li><li>קדיש</li>
-            <li>מנחה</li><li>ערבית</li>
+            <li>תפילה בסיום הלימוד</li>
+            <li>השכבה</li>
+            <li>קדיש</li>
+            <li>מנחה</li>
+            <li>ערבית</li>
           </ul>
         </div>
 
-        {/* Content Sections */}
-        <SectionCard id="tefillah" title="תפילה קודם הלימוד"><p>{appData.tefillah[gender].replace(/\{\s*name\s*\}/g, name)}</p></SectionCard>
+        <SectionCard id="tefillah" title="תפילה קודם הלימוד">
+          <p style={{ textAlign: 'justify' }}>{appData.tefillah[gender].replace(/\{\s*name\s*\}/g, name)}</p>
+        </SectionCard>
 
         <SectionCard id="mishnayot" title="לימוד משניות">
+          <p style={{ textAlign: 'justify', marginBottom: '35px' }}>{appData.mishnahIntro}</p>
           {letters.map((char: string, index: number) => (
             <div key={index} style={{ marginBottom: '35px' }}>
-              <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem' }}>~ אות {char} ~</h3>
-              {mishnayotData[char]?.map((text, i) => <p key={i}>{text}</p>)}
+              <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
+              {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <p key={i} style={{ marginBottom: '12px', textAlign: 'justify' }}>{text}</p>) : <p>הטקסט יתווסף בהמשך</p>}
             </div>
           ))}
-          <div>{renderFormattedText(appData.mishnahOutro)}</div>
-        </SectionCard>
-
-        <SectionCard id="tehillim" title="תהילים">
-          {letters.map((char: string, index: number) => (
-            <div key={index}><h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center' }}>~ אות {char} ~</h3>{tehillimData[char]?.map((text, i) => <p key={i} style={{ textAlign: 'center' }}>{text}</p>)}</div>
-          ))}
-          {includeNeshama && <div style={{ marginTop: '50px', borderTop: '2px dashed #e2e8f0' }}><h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center' }}>~ אותיות "נשמה" ~</h3>{['נ', 'ש', 'מ', 'ה'].map((char, index) => (<div key={index}><h4 style={{ color: theme.primary, textAlign: 'center' }}>~ אות {char} ~</h4>{tehillimData[char]?.map((text, i) => <p key={i} style={{ textAlign: 'center' }}>{text}</p>)}</div>))}</div>}
-        </SectionCard>
-
-        {includeZohar && (
-          <SectionCard id="zohar" title="זוהר (אדרא זוטא)">
-            {appData.zohar.map((p: any, i: number) => (<div key={i} style={{ marginBottom: '30px' }}><p style={{ fontWeight: '700' }}>{p.aramaic}</p><p>{p.hebrew}</p></div>))}
-          </SectionCard>
-        )}
-
-        <SectionCard id="sium_tefillah" title="תפילה בסיום הלימוד">{appData.siumTefillah[gender].replace(/\{\s*name\s*\}/g, name).split('\n').map((p, i) => <p key={i}>{p}</p>)}</SectionCard>
-
-        <SectionCard id="hashkava" title="השכבה">
-          {appData.hashkava[gender].replace(/\{\s*name\s*\}/g, name).split('\n').map((p, i) => {
-            const parts = p.split(/(\([^)]+\))/g);
-            return <p key={i}>{parts.map((part, j) => part.startsWith('(') ? <span key={j} style={{ opacity: 0.65 }}>{part}</span> : <span key={j}>{part}</span>)}</p>
-          })}
-        </SectionCard>
-
-        <SectionCard id="kaddish" title="קדיש">
-          <div style={{ textAlign: 'center' }}>
-            <h4 className="no-print" style={{ color: theme.primary, opacity: 0.8 }}>נוסח {nusach === 'baladi' ? 'בלדי' : 'שאמי'}</h4>
-            <p style={{ whiteSpace: 'pre-line' }}>{(appData.kaddish as any)[nusach]}</p>
+          <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
+            {renderFormattedText(appData.mishnahOutro)}
           </div>
         </SectionCard>
 
-        {/* New Prayer Sections */}
-        <SectionCard id="mincha" title="תפילת מנחה">
-          <p style={{ whiteSpace: 'pre-line' }}>{(appData.mincha as any)[nusach]}</p>
-        </SectionCard>
-
-        <SectionCard id="arvit" title="תפילת ערבית">
-          <p style={{ whiteSpace: 'pre-line' }}>{(appData.arvit as any)[nusach]}</p>
-        </SectionCard>
-
-        <div className="print-only print-back-cover" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center' }}>
-          <h2>הוכן ע"י www.azkarapp.com</h2>
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://azkarapp.com" style={{ width: '200px' }} />
-        </div>
-      </main>
-    </div>
-  );
-}
+        <SectionCard id="tehillim" title="תהילים">
+          <p style={{ textAlign: 'center', marginBottom: '35px', fontWeight: 700, color: theme.primary }}>{appData.tehillimIntro}</p>
+          {letters.map((char: string, index: number) => (
+            <div key={index} style={{ marginBottom: '30px
