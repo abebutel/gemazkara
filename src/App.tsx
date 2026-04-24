@@ -268,7 +268,7 @@ export default function App() {
               <label style={{ display: 'block', marginBottom: '8px', color: theme.primary, fontWeight: 600 }}>נוסח התפילות</label>
               <select
                 value={nusach}
-                onChange={(e) => setNusach(e.target.value as 'baladi' | 'shami')}
+                onChange={(e) => setNusach(e.target.value as 'shami' | 'baladi')}
                 style={{ width: '100%', padding: '14px', fontSize: '16px', borderRadius: '8px', border: '1px solid #cbd5e0', backgroundColor: '#f8fafc', boxSizing: 'border-box', fontFamily: theme.uiFont, cursor: 'pointer' }}
               >
                 <option value="baladi">בלדי</option>
