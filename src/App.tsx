@@ -8,7 +8,10 @@ export default function App() {
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [includeNeshama, setIncludeNeshama] = useState(false);
   const [includeZohar, setIncludeZohar] = useState(false);
-  const [nusach, setNusach] = useState<'baladi' | 'shami'>('baladi');
+
+  // CHANGED: The default is now 'shami'
+  const [nusach, setNusach] = useState<'baladi' | 'shami'>('shami');
+
   const [isGenerated, setIsGenerated] = useState(false);
   const [fontSize, setFontSize] = useState(20);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -21,7 +24,6 @@ export default function App() {
   const [hebDateLetters, setHebDateLetters] = useState('');
   const [hebDateNumbers, setHebDateNumbers] = useState('');
 
-  // URL Parameters
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlName = params.get('name');
@@ -144,23 +146,47 @@ export default function App() {
     bookFont: "'Frank Ruhl Libre', serif"
   };
 
+  // UPGRADED: Now handles line breaks and custom ~ or * headers!
   const renderFormattedText = (text: string) => {
-    const h3Headers = ['פרק ״יש מעלין״', 'אותיות ״נשמה״'];
-    const boldHeaders = ["תפילה בסיום לימוד המשניות"];
+    const legacyH3 = ['פרק ״יש מעלין״', 'אותיות ״נשמה״'];
+    const legacyBold = ["תפילה בסיום לימוד המשניות"];
+
     return text.split('\n').map((line: string, i: number) => {
-      const cleanLine = line.replace(/["”“']/g, "");
-      if (h3Headers.some(h => cleanLine.includes(h.replace(/["”“']/g, "")))) {
+      let cleanLine = line.trim();
+
+      if (!cleanLine) {
+        return <br key={i} />;
+      }
+
+      // Check for dynamic gold headers (wrapped in ~)
+      const isDynamicH3 = cleanLine.startsWith('~') && cleanLine.endsWith('~');
+      if (isDynamicH3) {
+        cleanLine = cleanLine.substring(1, cleanLine.length - 1).trim();
+      }
+
+      const isLegacyH3 = legacyH3.some(h => line.replace(/["”“']/g, "").includes(h.replace(/["”“']/g, "")));
+
+      if (isDynamicH3 || isLegacyH3) {
         return (
           <h3
             key={i}
             className="print-heading"
             style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px', marginTop: '35px' }}
           >
-            ~ {line} ~
+            ~ {isDynamicH3 ? cleanLine : line.replace(/~/g, '')} ~
           </h3>
         );
       }
-      const isBoldHeader = boldHeaders.some(h => cleanLine.includes(h.replace(/["”“']/g, "")));
+
+      // Check for dynamic bold headers (wrapped in *)
+      const isDynamicBold = cleanLine.startsWith('*') && cleanLine.endsWith('*');
+      if (isDynamicBold) {
+        cleanLine = cleanLine.substring(1, cleanLine.length - 1).trim();
+      }
+
+      const isLegacyBold = legacyBold.some(h => line.replace(/["”“']/g, "").includes(h.replace(/["”“']/g, "")));
+      const isBoldHeader = isDynamicBold || isLegacyBold;
+
       return (
         <p
           key={i}
@@ -172,7 +198,7 @@ export default function App() {
             textAlign: isBoldHeader ? 'center' : 'justify'
           }}
         >
-          {line}
+          {isDynamicBold ? cleanLine : line}
         </p>
       );
     });
@@ -268,7 +294,7 @@ export default function App() {
               <label style={{ display: 'block', marginBottom: '8px', color: theme.primary, fontWeight: 600 }}>נוסח התפילות</label>
               <select
                 value={nusach}
-                onChange={(e) => setNusach(e.target.value as 'shami' | 'baladi')}
+                onChange={(e) => setNusach(e.target.value as 'baladi' | 'shami')}
                 style={{ width: '100%', padding: '14px', fontSize: '16px', borderRadius: '8px', border: '1px solid #cbd5e0', backgroundColor: '#f8fafc', boxSizing: 'border-box', fontFamily: theme.uiFont, cursor: 'pointer' }}
               >
                 <option value="baladi">בלדי</option>
@@ -551,22 +577,17 @@ export default function App() {
             <h4 className="no-print" style={{ color: theme.primary, marginBottom: '10px', fontSize: '1.2rem', opacity: 0.8 }}>
               נוסח {nusach === 'baladi' ? 'בלדי' : 'שאמי'}
             </h4>
-            <p style={{ whiteSpace: 'pre-line', marginBottom: '30px' }}>
-              {appData.kaddish ? (appData.kaddish as Record<string, string>)[nusach] : 'הטקסט יתווסף בהמשך'}
-            </p>
+            {appData.kaddish ? renderFormattedText((appData.kaddish as Record<string, string>)[nusach]) : <p>הטקסט יתווסף בהמשך</p>}
           </div>
         </SectionCard>
 
+        {/* Upgraded Prayer Sections that now use the Dynamic Header Formatter! */}
         <SectionCard id="mincha" title="תפילת מנחה">
-          <p style={{ whiteSpace: 'pre-line', textAlign: 'justify' }}>
-            {appData.mincha ? (appData.mincha as Record<string, string>)[nusach] : 'הטקסט יתווסף בהמשך'}
-          </p>
+          {appData.mincha ? renderFormattedText((appData.mincha as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך') : <p>הטקסט יתווסף בהמשך</p>}
         </SectionCard>
 
         <SectionCard id="arvit" title="תפילת ערבית">
-          <p style={{ whiteSpace: 'pre-line', textAlign: 'justify' }}>
-            {appData.arvit ? (appData.arvit as Record<string, string>)[nusach] : 'הטקסט יתווסף בהמשך'}
-          </p>
+          {appData.arvit ? renderFormattedText((appData.arvit as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך') : <p>הטקסט יתווסף בהמשך</p>}
         </SectionCard>
 
         {/* PRINT ONLY: Back Cover Page */}
