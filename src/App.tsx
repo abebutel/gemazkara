@@ -147,11 +147,11 @@ export default function App() {
     bookFont: "'Frank Ruhl Libre', serif"
   };
 
-  const renderFormattedText = (text: string, forceCenter: boolean = false, isMishna: boolean = false, sectionId: string = '') => {
+  // מנוע העיצוב החכם שודרג לתמוך בהגדלה ממוקדת למשנה הראשונה בלבד ולדלג על סעיפים כמו "א. " או "ב' "
+  const renderFormattedText = (text: string, forceCenter: boolean = false, enlargeFirstLetter: boolean = false, sectionId: string = '') => {
     const legacyH3 = ['פרק ״יש מעלין״', 'אותיות ״נשמה״'];
     const legacyBold = ["תפילה בסיום לימוד המשניות"];
     
-    // משיכת רשימת כל הכותרות של הפרק לצורך בניית הניווט הפנימי
     let sectionHeaders: string[] = [];
     if (sectionId) {
       sectionHeaders = text.split('\n')
@@ -159,6 +159,8 @@ export default function App() {
         .filter(line => line.startsWith('*') && line.endsWith('*'))
         .map(line => line.substring(1, line.length - 1).trim());
     }
+
+    let hasEnlargedInThisBlock = false;
 
     return text.split('\n').map((line: string, i: number) => {
       let cleanLine = line.trim();
@@ -192,7 +194,6 @@ export default function App() {
       const hasNikud = /[\u0591-\u05C7]/.test(cleanLine);
       const isInstructionLine = hasHebrew && !hasNikud && !isBoldHeader;
 
-      const parts = (isDynamicBold ? cleanLine : line).split(/(\([^)]+\))/g);
       const anchorId = (isBoldHeader && sectionId) ? `subtitle-${sectionId}-${cleanLine.replace(/\s+/g, '-')}` : undefined;
 
       const pStyle = { 
@@ -206,31 +207,49 @@ export default function App() {
       };
 
       const renderParts = () => {
-        if (isMishna && !isInstructionLine && !isBoldHeader && cleanLine.length > 0) {
-           const firstChar = cleanLine.charAt(0);
-           return (
-             <>
-               <span style={{ fontSize: `${fontSize + 8}px`, fontWeight: '900', color: theme.primary }}>{firstChar}</span>
-               {parts.map((part, j) => {
-                  let textToRender = part;
-                  if (j === 0 && textToRender.length > 0) textToRender = textToRender.substring(1);
-                  if (!textToRender) return null;
-                  return part.startsWith('(') && part.endsWith(')') ? 
-                    <span key={j} style={{ opacity: 0.65, fontSize: `${Math.max(14, fontSize - 2)}px` }}>{textToRender}</span> : 
-                    <span key={j}>{textToRender}</span>
-               })}
-             </>
-           )
-        } else {
-           return parts.map((part, j) => 
-              part.startsWith('(') && part.endsWith(')') ? 
-                <span key={j} style={{ opacity: 0.65, fontSize: `${Math.max(14, fontSize - 2)}px` }}>{part}</span> : 
-                <span key={j}>{part}</span>
-           );
+        // אם הוגדר להגדיל את האות הראשונה של קטע זה, וזה טקסט רגיל (לא הוראה/כותרת) ועדיין לא הגדלנו אות בבלוק הזה:
+        if (enlargeFirstLetter && !hasEnlargedInThisBlock && !isInstructionLine && !isBoldHeader && cleanLine.length > 0) {
+           hasEnlargedInThisBlock = true;
+           
+           let prefix = "";
+           let mainText = cleanLine;
+           
+           // Regex שמזהה תבניות מספור כמו: "א. ", "א' ", "1. ", "יב) " ומפריד אותן מהמילה האמיתית הראשונה
+           const prefixMatch = cleanLine.match(/^([א-ת\d]{1,2}[.'׳)\]-]\s+)/);
+           if (prefixMatch) {
+             prefix = prefixMatch[1];
+             mainText = cleanLine.substring(prefixMatch[0].length);
+           }
+           
+           if (mainText.length > 0) {
+               const firstChar = mainText.charAt(0);
+               const restOfText = mainText.substring(1);
+               const parts = restOfText.split(/(\([^)]+\))/g);
+               
+               return (
+                 <>
+                   {prefix && <span>{prefix}</span>}
+                   <span style={{ fontSize: `${fontSize + 10}px`, fontWeight: '900', color: theme.primary }}>{firstChar}</span>
+                   {parts.map((part, j) => {
+                      if (!part) return null;
+                      return part.startsWith('(') && part.endsWith(')') ? 
+                        <span key={j} style={{ opacity: 0.65, fontSize: `${Math.max(14, fontSize - 2)}px` }}>{part}</span> : 
+                        <span key={j}>{part}</span>
+                   })}
+                 </>
+               );
+           }
         }
+        
+        // רינדור רגיל לשאר השורות
+        const parts = (isDynamicBold ? cleanLine : line).split(/(\([^)]+\))/g);
+        return parts.map((part, j) => 
+            part.startsWith('(') && part.endsWith(')') ? 
+              <span key={j} style={{ opacity: 0.65, fontSize: `${Math.max(14, fontSize - 2)}px` }}>{part}</span> : 
+              <span key={j}>{part}</span>
+        );
       };
 
-      // אם זו שורת כותרת, וזה פרק מנחה/ערבית (שיש בו מעל לכותרת אחת) - נוסיף את התפריט הקורס
       if (anchorId && sectionHeaders.length > 1) {
         return (
           <div key={i} id={anchorId} style={{ marginTop: '20px' }}>
@@ -626,7 +645,7 @@ export default function App() {
           {letters.map((char: string, index: number) => (
              <div key={`mishnah-${index}`} style={{ marginBottom: '35px' }}>
                <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
-               {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, false, true)}</div>) : <p>הטקסט יתווסף בהמשך</p>}
+               {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, false, i === 0)}</div>) : <p>הטקסט יתווסף בהמשך</p>}
              </div>
           ))}
           
@@ -636,7 +655,7 @@ export default function App() {
               {['נ', 'ש', 'מ', 'ה'].map((char: string, index: number) => (
                  <div key={`mishnah-neshama-${index}`} style={{ marginBottom: '30px' }}>
                    <h4 style={{ color: theme.primary, textAlign: 'center', fontSize: '1.5rem', marginBottom: '15px' }}>~ אות {char} ~</h4>
-                   {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, false, true)}</div>) : <p>הטקסט יתווסף בהמשך</p>}
+                   {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, false, i === 0)}</div>) : <p>הטקסט יתווסף בהמשך</p>}
                  </div>
               ))}
             </div>
