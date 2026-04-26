@@ -147,8 +147,17 @@ export default function App() {
     bookFont: "'Frank Ruhl Libre', serif"
   };
 
-  // מנוע העיצוב החכם שודרג לתמוך בהגדלה ממוקדת למשנה הראשונה בלבד ולדלג על סעיפים כמו "א. " או "ב' "
-  const renderFormattedText = (text: string, forceCenter: boolean = false, enlargeFirstLetter: boolean = false, sectionId: string = '') => {
+  // אובייקט להגדרות רינדור הטקסט
+  interface RenderOptions {
+    forceCenter?: boolean;
+    enlargeFirstLetter?: boolean; // הגדלת אות ראשונה במשנה הראשונה בבלוק
+    sectionId?: string;
+    isMishnahOutro?: boolean; // מפעיל לוגיקה מיוחדת לקטע הסיום (זיהוי אותיות נשמה)
+  }
+
+  const renderFormattedText = (text: string, options: RenderOptions = {}) => {
+    const { forceCenter = false, enlargeFirstLetter = false, sectionId = '', isMishnahOutro = false } = options;
+    
     const legacyH3 = ['פרק ״יש מעלין״', 'אותיות ״נשמה״'];
     const legacyBold = ["תפילה בסיום לימוד המשניות"];
     
@@ -161,6 +170,8 @@ export default function App() {
     }
 
     let hasEnlargedInThisBlock = false;
+    let inNeshamaSection = false;
+    let neshamaEnlargedCount = 0;
 
     return text.split('\n').map((line: string, i: number) => {
       let cleanLine = line.trim();
@@ -174,6 +185,12 @@ export default function App() {
       const isLegacyH3 = legacyH3.some(h => line.replace(/["”“']/g, "").includes(h.replace(/["”“']/g, "")));
 
       if (isDynamicH3 || isLegacyH3) {
+        // בודק אם הגענו לכותרת של "אותיות נשמה" בתוך קטע הסיום
+        const normalizedLine = cleanLine.replace(/["”“']/g, "");
+        if (isMishnahOutro && normalizedLine.includes("אותיות נשמה")) {
+          inNeshamaSection = true;
+        }
+
         return (
           <h3 
             key={i} 
@@ -207,14 +224,24 @@ export default function App() {
       };
 
       const renderParts = () => {
-        // אם הוגדר להגדיל את האות הראשונה של קטע זה, וזה טקסט רגיל (לא הוראה/כותרת) ועדיין לא הגדלנו אות בבלוק הזה:
+        let shouldEnlarge = false;
+
+        // לוגיקה 1: אם מוגדר להגדיל עבור משנה רגילה - נגדיל רק את השורה התקינה הראשונה ונחסום להמשך הבלוק.
         if (enlargeFirstLetter && !hasEnlargedInThisBlock && !isInstructionLine && !isBoldHeader && cleanLine.length > 0) {
-           hasEnlargedInThisBlock = true;
-           
+          shouldEnlarge = true;
+          hasEnlargedInThisBlock = true;
+        } 
+        // לוגיקה 2: אם אנחנו בטקסט הסיום (MishnahOutro), עברנו את הכותרת "אותיות נשמה", וזו שורה תקינה - נגדיל את 4 הראשונות.
+        else if (isMishnahOutro && inNeshamaSection && !isInstructionLine && !isBoldHeader && cleanLine.length > 0 && neshamaEnlargedCount < 4) {
+          shouldEnlarge = true;
+          neshamaEnlargedCount++;
+        }
+
+        if (shouldEnlarge) {
            let prefix = "";
            let mainText = cleanLine;
            
-           // Regex שמזהה תבניות מספור כמו: "א. ", "א' ", "1. ", "יב) " ומפריד אותן מהמילה האמיתית הראשונה
+           // מדלג על מספור בתחילת משנה כדי להגדיל את המילה האמיתית
            const prefixMatch = cleanLine.match(/^([א-ת\d]{1,2}[.'׳)\]-]\s+)/);
            if (prefixMatch) {
              prefix = prefixMatch[1];
@@ -645,24 +672,12 @@ export default function App() {
           {letters.map((char: string, index: number) => (
              <div key={`mishnah-${index}`} style={{ marginBottom: '35px' }}>
                <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
-               {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, false, i === 0)}</div>) : <p>הטקסט יתווסף בהמשך</p>}
+               {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { enlargeFirstLetter: true })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
              </div>
           ))}
-          
-          {includeNeshama && (
-            <div style={{ marginTop: '50px', paddingTop: '30px', borderTop: '2px dashed #e2e8f0' }}>
-              <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '25px' }}>~ משניות אותיות ״נשמה״ ~</h3>
-              {['נ', 'ש', 'מ', 'ה'].map((char: string, index: number) => (
-                 <div key={`mishnah-neshama-${index}`} style={{ marginBottom: '30px' }}>
-                   <h4 style={{ color: theme.primary, textAlign: 'center', fontSize: '1.5rem', marginBottom: '15px' }}>~ אות {char} ~</h4>
-                   {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, false, i === 0)}</div>) : <p>הטקסט יתווסף בהמשך</p>}
-                 </div>
-              ))}
-            </div>
-          )}
 
           <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
-            {renderFormattedText(appData.mishnahOutro)}
+            {renderFormattedText(appData.mishnahOutro, { isMishnahOutro: true })}
           </div>
         </SectionCard>
 
@@ -671,7 +686,7 @@ export default function App() {
           {letters.map((char: string, index: number) => (
              <div key={`tehillim-${index}`} style={{ marginBottom: '30px' }}>
                <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
-               {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, true)}</div>) : <p>הטקסט יתווסף בהמשך</p>}
+               {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { forceCenter: true })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
              </div>
           ))}
           {includeNeshama && (
@@ -680,7 +695,7 @@ export default function App() {
               {['נ', 'ש', 'מ', 'ה'].map((char: string, index: number) => (
                  <div key={`tehillim-neshama-${index}`} style={{ marginBottom: '30px' }}>
                    <h4 style={{ color: theme.primary, textAlign: 'center', fontSize: '1.5rem', marginBottom: '15px' }}>~ אות {char} ~</h4>
-                   {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, true)}</div>) : <p>הטקסט יתווסף בהמשך</p>}
+                   {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { forceCenter: true })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
                  </div>
               ))}
             </div>
@@ -714,7 +729,7 @@ export default function App() {
             <h4 className="no-print" style={{ color: theme.primary, marginBottom: '10px', fontSize: '1.2rem', opacity: 0.8 }}>
               נוסח {nusach === 'baladi' ? 'בלדי' : 'שאמי'}
             </h4>
-            {appData.kaddish ? renderFormattedText((appData.kaddish as Record<string, string>)[nusach], true) : <p>הטקסט יתווסף בהמשך</p>}
+            {appData.kaddish ? renderFormattedText((appData.kaddish as Record<string, string>)[nusach], { forceCenter: true }) : <p>הטקסט יתווסף בהמשך</p>}
           </div>
         </SectionCard>
 
@@ -722,12 +737,12 @@ export default function App() {
           <>
             <SectionCard id="mincha" title="תפילת מנחה">
               <MiniTOC text={appData.mincha ? (appData.mincha as Record<string, string>)[nusach] : ''} sectionId="mincha" />
-              {appData.mincha ? renderFormattedText((appData.mincha as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', false, false, 'mincha') : <p>הטקסט יתווסף בהמשך</p>}
+              {appData.mincha ? renderFormattedText((appData.mincha as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', { sectionId: 'mincha' }) : <p>הטקסט יתווסף בהמשך</p>}
             </SectionCard>
 
             <SectionCard id="arvit" title="תפילת ערבית">
                <MiniTOC text={appData.arvit ? (appData.arvit as Record<string, string>)[nusach] : ''} sectionId="arvit" />
-               {appData.arvit ? renderFormattedText((appData.arvit as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', false, false, 'arvit') : <p>הטקסט יתווסף בהמשך</p>}
+               {appData.arvit ? renderFormattedText((appData.arvit as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', { sectionId: 'arvit' }) : <p>הטקסט יתווסף בהמשך</p>}
             </SectionCard>
           </>
         )}
