@@ -147,11 +147,19 @@ export default function App() {
     bookFont: "'Frank Ruhl Libre', serif"
   };
 
-  // מנוע העיצוב החכם שודרג לתמוך ב-IDs ייחודיים לניווט פנימי
   const renderFormattedText = (text: string, forceCenter: boolean = false, isMishna: boolean = false, sectionId: string = '') => {
     const legacyH3 = ['פרק ״יש מעלין״', 'אותיות ״נשמה״'];
     const legacyBold = ["תפילה בסיום לימוד המשניות"];
     
+    // משיכת רשימת כל הכותרות של הפרק לצורך בניית הניווט הפנימי
+    let sectionHeaders: string[] = [];
+    if (sectionId) {
+      sectionHeaders = text.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.startsWith('*') && line.endsWith('*'))
+        .map(line => line.substring(1, line.length - 1).trim());
+    }
+
     return text.split('\n').map((line: string, i: number) => {
       let cleanLine = line.trim();
       
@@ -185,60 +193,89 @@ export default function App() {
       const isInstructionLine = hasHebrew && !hasNikud && !isBoldHeader;
 
       const parts = (isDynamicBold ? cleanLine : line).split(/(\([^)]+\))/g);
-
-      // יצירת ID מזהה לכותרת לצורך הניווט (רק אם יש sectionId והשורה היא כותרת מודגשת)
       const anchorId = (isBoldHeader && sectionId) ? `subtitle-${sectionId}-${cleanLine.replace(/\s+/g, '-')}` : undefined;
 
+      const pStyle = { 
+        fontWeight: isBoldHeader ? '700' : '400', 
+        fontSize: isBoldHeader ? `${fontSize + 4}px` : (isInstructionLine ? `${Math.max(14, fontSize - 3)}px` : `${fontSize}px`), 
+        marginTop: isBoldHeader ? '35px' : '5px', 
+        marginBottom: isInstructionLine ? '5px' : '15px',
+        color: isBoldHeader ? theme.primary : (isInstructionLine ? '#718096' : theme.text), 
+        textAlign: isBoldHeader || forceCenter || isInstructionLine ? 'center' : ('justify' as any), 
+        lineHeight: isInstructionLine ? '1.5' : '1.9'
+      };
+
+      const renderParts = () => {
+        if (isMishna && !isInstructionLine && !isBoldHeader && cleanLine.length > 0) {
+           const firstChar = cleanLine.charAt(0);
+           return (
+             <>
+               <span style={{ fontSize: `${fontSize + 8}px`, fontWeight: '900', color: theme.primary }}>{firstChar}</span>
+               {parts.map((part, j) => {
+                  let textToRender = part;
+                  if (j === 0 && textToRender.length > 0) textToRender = textToRender.substring(1);
+                  if (!textToRender) return null;
+                  return part.startsWith('(') && part.endsWith(')') ? 
+                    <span key={j} style={{ opacity: 0.65, fontSize: `${Math.max(14, fontSize - 2)}px` }}>{textToRender}</span> : 
+                    <span key={j}>{textToRender}</span>
+               })}
+             </>
+           )
+        } else {
+           return parts.map((part, j) => 
+              part.startsWith('(') && part.endsWith(')') ? 
+                <span key={j} style={{ opacity: 0.65, fontSize: `${Math.max(14, fontSize - 2)}px` }}>{part}</span> : 
+                <span key={j}>{part}</span>
+           );
+        }
+      };
+
+      // אם זו שורת כותרת, וזה פרק מנחה/ערבית (שיש בו מעל לכותרת אחת) - נוסיף את התפריט הקורס
+      if (anchorId && sectionHeaders.length > 1) {
+        return (
+          <div key={i} id={anchorId} style={{ marginTop: '20px' }}>
+            <p style={pStyle}>{renderParts()}</p>
+            <details className="no-print" style={{ textAlign: 'center', marginBottom: '25px' }}>
+              <summary style={{ cursor: 'pointer', fontSize: '0.95rem', color: theme.primary, display: 'inline-block', padding: '5px 15px', fontWeight: 600, backgroundColor: '#edf2f7', borderRadius: '20px', border: `1px dashed ${theme.primary}` }}>
+                ⏷ ניווט לפרקים נוספים
+              </summary>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '12px', padding: '0 10px' }}>
+                {sectionHeaders.map((h, idx) => (
+                  <a 
+                    key={idx} 
+                    href={`#subtitle-${sectionId}-${h.replace(/\s+/g, '-')}`}
+                    style={{
+                      padding: '5px 12px',
+                      backgroundColor: h === cleanLine ? theme.primary : '#ffffff',
+                      color: h === cleanLine ? 'white' : theme.primary,
+                      borderRadius: '15px',
+                      textDecoration: 'none',
+                      fontSize: '0.85rem',
+                      fontWeight: h === cleanLine ? 700 : 600,
+                      border: `1px solid ${theme.primary}`,
+                      transition: 'all 0.2s',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {h}
+                  </a>
+                ))}
+              </div>
+            </details>
+          </div>
+        );
+      }
+
       return (
-        <p 
-          key={i} 
-          id={anchorId}
-          style={{ 
-            fontWeight: isBoldHeader ? '700' : '400', 
-            fontSize: isBoldHeader ? `${fontSize + 4}px` : (isInstructionLine ? `${Math.max(14, fontSize - 3)}px` : `${fontSize}px`), 
-            marginTop: isBoldHeader ? '35px' : '5px', 
-            marginBottom: isInstructionLine ? '5px' : '15px',
-            color: isBoldHeader ? theme.primary : (isInstructionLine ? '#718096' : theme.text), 
-            textAlign: isBoldHeader || forceCenter || isInstructionLine ? 'center' : 'justify', 
-            lineHeight: isInstructionLine ? '1.5' : '1.9'
-          }}
-        >
-          {(() => {
-            if (isMishna && !isInstructionLine && !isBoldHeader && cleanLine.length > 0) {
-               const firstChar = cleanLine.charAt(0);
-               return (
-                 <>
-                   <span style={{ fontSize: `${fontSize + 8}px`, fontWeight: '900', color: theme.primary }}>{firstChar}</span>
-                   {parts.map((part, j) => {
-                      let textToRender = part;
-                      if (j === 0 && textToRender.length > 0) {
-                        textToRender = textToRender.substring(1);
-                      }
-                      if (!textToRender) return null;
-                      return part.startsWith('(') && part.endsWith(')') ? 
-                        <span key={j} style={{ opacity: 0.65, fontSize: `${Math.max(14, fontSize - 2)}px` }}>{textToRender}</span> : 
-                        <span key={j}>{textToRender}</span>
-                   })}
-                 </>
-               )
-            } else {
-               return parts.map((part, j) => 
-                  part.startsWith('(') && part.endsWith(')') ? 
-                    <span key={j} style={{ opacity: 0.65, fontSize: `${Math.max(14, fontSize - 2)}px` }}>{part}</span> : 
-                    <span key={j}>{part}</span>
-               );
-            }
-          })()}
+        <p key={i} id={anchorId} style={pStyle}>
+          {renderParts()}
         </p>
       );
     });
   };
 
-  // רכיב חדש: יוצר תפריט גלולות לניווט מהיר בתוך תפילות ארוכות
   const MiniTOC = ({ text, sectionId }: { text: string, sectionId: string }) => {
     if (!text) return null;
-    
-    // שולף את כל השורות שעטופות בכוכביות
     const headers = text.split('\n')
       .map(line => line.trim())
       .filter(line => line.startsWith('*') && line.endsWith('*'))
@@ -458,11 +495,9 @@ export default function App() {
     <div style={{ display: 'flex', direction: 'rtl', fontFamily: theme.bookFont, minHeight: '100vh', backgroundColor: theme.bg, flexDirection: isMobile ? 'column' : 'row' }}>
       
       <style>{`
-        /* גלילה חלקה וריווח עליון כדי שהתפריט לא יסתיר את הכותרות בניווט */
-        html { 
-          scroll-behavior: smooth; 
-          scroll-padding-top: 90px; 
-        }
+        html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
 
         @media print {
           header, nav, .no-print { display: none !important; }
