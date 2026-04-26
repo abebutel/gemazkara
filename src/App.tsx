@@ -143,8 +143,6 @@ export default function App() {
     }
 
     let hasEnlargedInThisBlock = false;
-    
-    // Persistent state across line breaks for the { } invisible markers
     let isMultiLineWeak = false;
     let spanKeyCounter = 0;
 
@@ -152,7 +150,7 @@ export default function App() {
       let cleanLine = line.trim();
       if (!cleanLine) return <br key={i} />;
 
-      // Strip manual carets just in case they were left behind in data.ts
+      // Strip manual carets just in case they were left behind
       cleanLine = cleanLine.replace(/\^/g, '');
 
       const isDynamicH3 = cleanLine.startsWith('~') && cleanLine.endsWith('~');
@@ -174,17 +172,6 @@ export default function App() {
       const isLegacyBold = legacyBold.some(h => line.replace(/["”“']/g, "").includes(h.replace(/["”“']/g, "")));
       const isBoldHeader = isDynamicBold || isLegacyBold;
 
-      // Special Intercept for Neshama Header in Outro
-      if (isMishnahOutro && textWithoutStars.replace(/["”“']/g, "").includes("אותיות נשמה")) {
-        return (
-          <div key={i} style={{ marginTop: '50px', paddingTop: '30px', borderTop: '2px dashed #e2e8f0' }}>
-            <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '25px' }}>
-              ~ משניות אותיות ״נשמה״ ~
-            </h3>
-          </div>
-        );
-      }
-
       const hasHebrew = /[\u05D0-\u05EA]/.test(textWithoutStars);
       const hasNikud = /[\u0591-\u05C7]/.test(textWithoutStars);
       const isInstructionLine = isMinchaArvit && hasHebrew && !hasNikud && !isBoldHeader;
@@ -195,7 +182,6 @@ export default function App() {
       let firstLetter = "";
       let restOfLine = textWithoutStars;
       let shouldEnlarge = false;
-      let neshamaCharHeader = null;
 
       // 1. Auto-enlarge first mishna of the block
       if (enlargeFirstLetter && !hasEnlargedInThisBlock && !isInstructionLine && !isBoldHeader && restOfLine.length > 0) {
@@ -205,11 +191,6 @@ export default function App() {
       // 2. Auto-enlarge Neshama mishnayot in Outro (lines starting with ד. ה. ו. ז.)
       else if (isMishnahOutro && restOfLine.match(/^[דהוז][.'׳)\]-]+\s+/) && !isInstructionLine && !isBoldHeader) {
         shouldEnlarge = true;
-        const charMap: Record<string, string> = { 'ד': 'נ', 'ה': 'ש', 'ו': 'מ', 'ז': 'ה' };
-        const prefixChar = restOfLine.charAt(0);
-        if (charMap[prefixChar]) {
-          neshamaCharHeader = <h4 style={{ color: theme.primary, textAlign: 'center', fontSize: '1.5rem', marginBottom: '15px', marginTop: '25px' }}>~ אות {charMap[prefixChar]} ~</h4>;
-        }
       }
 
       if (shouldEnlarge) {
@@ -223,13 +204,12 @@ export default function App() {
         const letterMatch = tempMain.match(/^([^א-ת\uFB1D-\uFB4F]*)([א-ת\uFB1D-\uFB4F][\u0591-\u05C7]*)(.*)$/);
         if (letterMatch) {
            prefix += letterMatch[1];
-           // Normalize to fix web font bolding bug with precomposed chars (like שׁ)
            firstLetter = letterMatch[2].normalize('NFKD');
            restOfLine = letterMatch[3];
         }
       }
 
-      // Invisible formatting { } parser
+      // Process invisible { } tags and visible ( ) tags
       const renderParts = (textStr: string) => {
         const spans: ReactNode[] = [];
         let currentBuffer = "";
@@ -278,7 +258,6 @@ export default function App() {
 
       const content = (
         <>
-          {neshamaCharHeader}
           {firstLetter ? (
             <>
               {renderParts(prefix)}
