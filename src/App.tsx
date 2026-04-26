@@ -8,8 +8,8 @@ export default function App() {
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [includeNeshama, setIncludeNeshama] = useState(false);
   const [includeZohar, setIncludeZohar] = useState(false);
-  const [includeTfilot, setIncludeTfilot] = useState(false); // NEW: Optional Mincha/Arvit
-  const [nusach, setNusach] = useState<'baladi' | 'shami'>('shami'); // DEFAULT is now Shami
+  const [includeTfilot, setIncludeTfilot] = useState(false);
+  const [nusach, setNusach] = useState<'baladi' | 'shami'>('shami');
   const [isGenerated, setIsGenerated] = useState(false);
   const [fontSize, setFontSize] = useState(20);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -22,7 +22,6 @@ export default function App() {
   const [hebDateLetters, setHebDateLetters] = useState('');
   const [hebDateNumbers, setHebDateNumbers] = useState('');
 
-  // URL Parameters
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const urlName = params.get('name');
@@ -148,7 +147,8 @@ export default function App() {
     bookFont: "'Frank Ruhl Libre', serif"
   };
 
-  const renderFormattedText = (text: string, forceCenter: boolean = false, isMishna: boolean = false) => {
+  // מנוע העיצוב החכם שודרג לתמוך ב-IDs ייחודיים לניווט פנימי
+  const renderFormattedText = (text: string, forceCenter: boolean = false, isMishna: boolean = false, sectionId: string = '') => {
     const legacyH3 = ['פרק ״יש מעלין״', 'אותיות ״נשמה״'];
     const legacyBold = ["תפילה בסיום לימוד המשניות"];
     
@@ -186,9 +186,13 @@ export default function App() {
 
       const parts = (isDynamicBold ? cleanLine : line).split(/(\([^)]+\))/g);
 
+      // יצירת ID מזהה לכותרת לצורך הניווט (רק אם יש sectionId והשורה היא כותרת מודגשת)
+      const anchorId = (isBoldHeader && sectionId) ? `subtitle-${sectionId}-${cleanLine.replace(/\s+/g, '-')}` : undefined;
+
       return (
         <p 
           key={i} 
+          id={anchorId}
           style={{ 
             fontWeight: isBoldHeader ? '700' : '400', 
             fontSize: isBoldHeader ? `${fontSize + 4}px` : (isInstructionLine ? `${Math.max(14, fontSize - 3)}px` : `${fontSize}px`), 
@@ -200,7 +204,6 @@ export default function App() {
           }}
         >
           {(() => {
-            // אם זה משנה, ואנחנו לא בשורת כותרת/הוראה - נגדיל את האות הראשונה
             if (isMishna && !isInstructionLine && !isBoldHeader && cleanLine.length > 0) {
                const firstChar = cleanLine.charAt(0);
                return (
@@ -208,7 +211,6 @@ export default function App() {
                    <span style={{ fontSize: `${fontSize + 8}px`, fontWeight: '900', color: theme.primary }}>{firstChar}</span>
                    {parts.map((part, j) => {
                       let textToRender = part;
-                      // מורידים את האות הראשונה מהחלק הראשון כדי שלא תופיע פעמיים
                       if (j === 0 && textToRender.length > 0) {
                         textToRender = textToRender.substring(1);
                       }
@@ -220,7 +222,6 @@ export default function App() {
                  </>
                )
             } else {
-               // רינדור רגיל לשאר האפליקציה
                return parts.map((part, j) => 
                   part.startsWith('(') && part.endsWith(')') ? 
                     <span key={j} style={{ opacity: 0.65, fontSize: `${Math.max(14, fontSize - 2)}px` }}>{part}</span> : 
@@ -231,6 +232,44 @@ export default function App() {
         </p>
       );
     });
+  };
+
+  // רכיב חדש: יוצר תפריט גלולות לניווט מהיר בתוך תפילות ארוכות
+  const MiniTOC = ({ text, sectionId }: { text: string, sectionId: string }) => {
+    if (!text) return null;
+    
+    // שולף את כל השורות שעטופות בכוכביות
+    const headers = text.split('\n')
+      .map(line => line.trim())
+      .filter(line => line.startsWith('*') && line.endsWith('*'))
+      .map(line => line.substring(1, line.length - 1).trim());
+
+    if (headers.length === 0) return null;
+
+    return (
+      <div className="no-print" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginBottom: '25px', padding: '0 10px' }}>
+        {headers.map((h, i) => (
+          <a 
+            key={i} 
+            href={`#subtitle-${sectionId}-${h.replace(/\s+/g, '-')}`}
+            style={{
+              padding: '6px 14px',
+              backgroundColor: '#edf2f7',
+              color: theme.primary,
+              borderRadius: '20px',
+              textDecoration: 'none',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              border: `1px solid #cbd5e0`,
+              transition: 'all 0.2s',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {h}
+          </a>
+        ))}
+      </div>
+    );
   };
 
   const SectionCard = ({ id, title, children }: { id: string, title: string, children: ReactNode }) => (
@@ -419,6 +458,12 @@ export default function App() {
     <div style={{ display: 'flex', direction: 'rtl', fontFamily: theme.bookFont, minHeight: '100vh', backgroundColor: theme.bg, flexDirection: isMobile ? 'column' : 'row' }}>
       
       <style>{`
+        /* גלילה חלקה וריווח עליון כדי שהתפריט לא יסתיר את הכותרות בניווט */
+        html { 
+          scroll-behavior: smooth; 
+          scroll-padding-top: 90px; 
+        }
+
         @media print {
           header, nav, .no-print { display: none !important; }
           body, html, main, div { background-color: white !important; color: black !important; }
@@ -550,7 +595,6 @@ export default function App() {
              </div>
           ))}
           
-          {/* הוספת משניות של אותיות "נשמה" */}
           {includeNeshama && (
             <div style={{ marginTop: '50px', paddingTop: '30px', borderTop: '2px dashed #e2e8f0' }}>
               <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '25px' }}>~ משניות אותיות ״נשמה״ ~</h3>
@@ -623,11 +667,13 @@ export default function App() {
         {includeTfilot && (
           <>
             <SectionCard id="mincha" title="תפילת מנחה">
-              {appData.mincha ? renderFormattedText((appData.mincha as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך') : <p>הטקסט יתווסף בהמשך</p>}
+              <MiniTOC text={appData.mincha ? (appData.mincha as Record<string, string>)[nusach] : ''} sectionId="mincha" />
+              {appData.mincha ? renderFormattedText((appData.mincha as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', false, false, 'mincha') : <p>הטקסט יתווסף בהמשך</p>}
             </SectionCard>
 
             <SectionCard id="arvit" title="תפילת ערבית">
-               {appData.arvit ? renderFormattedText((appData.arvit as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך') : <p>הטקסט יתווסף בהמשך</p>}
+               <MiniTOC text={appData.arvit ? (appData.arvit as Record<string, string>)[nusach] : ''} sectionId="arvit" />
+               {appData.arvit ? renderFormattedText((appData.arvit as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', false, false, 'arvit') : <p>הטקסט יתווסף בהמשך</p>}
             </SectionCard>
           </>
         )}
