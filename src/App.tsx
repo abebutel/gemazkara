@@ -126,10 +126,11 @@ export default function App() {
     enlargeFirstLetter?: boolean; 
     sectionId?: string;
     isMinchaArvit?: boolean;
+    isMishnahOutro?: boolean;
   }
 
   const renderFormattedText = (text: string, options: RenderOptions = {}) => {
-    const { forceCenter = false, enlargeFirstLetter = false, sectionId = '', isMinchaArvit = false } = options;
+    const { forceCenter = false, enlargeFirstLetter = false, sectionId = '', isMinchaArvit = false, isMishnahOutro = false } = options;
     const legacyH3 = ['פרק ״יש מעלין״', 'אותיות ״נשמה״'];
     const legacyBold = ["תפילה בסיום לימוד המשניות"];
     
@@ -142,6 +143,12 @@ export default function App() {
     }
 
     let hasEnlargedInThisBlock = false;
+    let inNeshamaSection = false;
+    let neshamaEnlargedCount = 0;
+    
+    // Persistent state across line breaks for the { } invisible markers
+    let isMultiLineWeak = false;
+    let spanKeyCounter = 0;
 
     return text.split('\n').map((line: string, i: number) => {
       let cleanLine = line.trim();
@@ -152,6 +159,9 @@ export default function App() {
       const isLegacyH3 = legacyH3.some(h => line.replace(/["”“']/g, "").includes(h.replace(/["”“']/g, "")));
 
       if (isDynamicH3 || isLegacyH3) {
+        if (isMishnahOutro && cleanLine.replace(/["”“']/g, "").includes("אותיות ״נשמה״")) {
+          inNeshamaSection = true;
+        }
         return (
           <h3 key={i} className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px', marginTop: '35px' }}>
             ~ {isDynamicH3 ? cleanLine : line.replace(/~/g, '')} ~
@@ -174,16 +184,16 @@ export default function App() {
       let firstLetter = "";
       let restOfLine = cleanLine;
 
-      // 1. Check for manual override using ^letter^
-      const manualMatch = cleanLine.match(/^(.*?)\^([^\^]+)\^(.*)$/);
-      if (manualMatch && !isInstructionLine && !isBoldHeader) {
-         prefix = manualMatch[1];
-         firstLetter = manualMatch[2];
-         restOfLine = manualMatch[3];
-         hasEnlargedInThisBlock = true;
-      } 
-      // 2. Automatic enlargement for first Mishna
-      else if (enlargeFirstLetter && !hasEnlargedInThisBlock && !isInstructionLine && !isBoldHeader) {
+      let shouldEnlarge = false;
+      if (enlargeFirstLetter && !hasEnlargedInThisBlock && !isInstructionLine && !isBoldHeader) {
+        shouldEnlarge = true;
+        hasEnlargedInThisBlock = true;
+      } else if (isMishnahOutro && inNeshamaSection && !isInstructionLine && !isBoldHeader && neshamaEnlargedCount < 4 && hasHebrew) {
+        shouldEnlarge = true;
+        neshamaEnlargedCount++;
+      }
+
+      if (shouldEnlarge) {
         const prefixMatch = cleanLine.match(/^([א-ת\d]{1,3}[.'׳"״)\]-]+\s+)/);
         let tempMain = cleanLine;
         if (prefixMatch) {
@@ -191,29 +201,52 @@ export default function App() {
           tempMain = cleanLine.substring(prefix.length);
         }
 
-        // Fixed Regex: captures standard Hebrew AND Unicode Presentation Forms (letters with Dagesh)
+        // Updated Regex to perfectly catch all Hebrew characters, including Unicode special forms (Dagesh, Shin-dots)
         const letterMatch = tempMain.match(/^([^א-ת\uFB1D-\uFB4F]*)([א-ת\uFB1D-\uFB4F][\u0591-\u05C7]*)(.*)$/);
         if (letterMatch) {
            prefix += letterMatch[1];
            firstLetter = letterMatch[2];
            restOfLine = letterMatch[3];
-           hasEnlargedInThisBlock = true;
         } else {
            restOfLine = cleanLine;
         }
-      } else {
-        restOfLine = cleanLine;
       }
 
+      // This parses ( ) visible markers, AND { } invisible multi-line markers
       const renderParts = (textStr: string) => {
-        const parts = textStr.split(/(\([^)]+\))/g);
-        return parts.map((part, j) => {
-          if (!part) return null;
-          if (part.startsWith('(') && part.endsWith(')')) {
-            return <span key={j} style={{ opacity: 0.65, fontSize: `${Math.max(14, fontSize - 2)}px` }}>{part}</span>;
+        const spans: ReactNode[] = [];
+        let currentBuffer = "";
+
+        const pushBuffer = () => {
+          if (!currentBuffer) return;
+          const subParts = currentBuffer.split(/(\([^)]+\))/g);
+          subParts.forEach((sp) => {
+            if (!sp) return;
+            if (sp.startsWith('(') && sp.endsWith(')')) {
+              spans.push(<span key={`sp-${spanKeyCounter++}`} style={{ opacity: 0.65, fontSize: `${Math.max(14, fontSize - 2)}px` }}>{sp}</span>);
+            } else if (isMultiLineWeak) {
+              spans.push(<span key={`sp-${spanKeyCounter++}`} style={{ opacity: 0.65, fontSize: `${Math.max(14, fontSize - 2)}px` }}>{sp}</span>);
+            } else {
+              spans.push(<span key={`sp-${spanKeyCounter++}`}>{sp}</span>);
+            }
+          });
+          currentBuffer = "";
+        };
+
+        for (let j = 0; j < textStr.length; j++) {
+          const char = textStr[j];
+          if (char === '{') {
+            pushBuffer();
+            isMultiLineWeak = true;
+          } else if (char === '}') {
+            pushBuffer();
+            isMultiLineWeak = false;
+          } else {
+            currentBuffer += char;
           }
-          return <span key={j}>{part}</span>;
-        });
+        }
+        pushBuffer();
+        return spans;
       };
 
       const pStyle = {
@@ -230,8 +263,10 @@ export default function App() {
         <>
           {firstLetter ? (
             <>
-              {prefix && <span>{prefix}</span>}
-              <span style={{ fontSize: `${fontSize + 10}px`, fontWeight: '900', color: theme.primary, marginLeft: '2px' }}>{firstLetter}</span>
+              {renderParts(prefix)}
+              <span style={{ fontSize: `${fontSize + 10}px`, fontWeight: '900', color: theme.primary, marginLeft: '2px', opacity: isMultiLineWeak ? 0.65 : 1 }}>
+                {firstLetter}
+              </span>
               {renderParts(restOfLine)}
             </>
           ) : (
@@ -321,7 +356,7 @@ export default function App() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: theme.primary, fontWeight: 600, fontSize: '1.1rem' }}>
                 <input type="checkbox" checked={includeNeshama} onChange={(e) => setIncludeNeshama(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                להוסיף תהילים של ״נשמה״
+                להוסיף תהילים ומשניות של ״נשמה״
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: theme.primary, fontWeight: 600, fontSize: '1.1rem' }}>
                 <input type="checkbox" checked={includeZohar} onChange={(e) => setIncludeZohar(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
@@ -459,7 +494,7 @@ export default function App() {
              </div>
           ))}
           <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
-            {renderFormattedText(appData.mishnahOutro)}
+            {renderFormattedText(appData.mishnahOutro, { isMishnahOutro: true })}
           </div>
         </SectionCard>
 
