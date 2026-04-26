@@ -24,14 +24,19 @@ export default function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('name')) {
-      setName(params.get('name') || '');
-      const urlGender = params.get('gender');
+    const urlName = params.get('name');
+    const urlGender = params.get('gender');
+    const urlNeshama = params.get('neshama');
+    const urlZohar = params.get('zohar');
+    const urlTfilot = params.get('tfilot');
+    const urlNusach = params.get('nusach');
+    
+    if (urlName) {
+      setName(urlName);
       if (urlGender === 'male' || urlGender === 'female') setGender(urlGender);
-      setIncludeNeshama(params.get('neshama') === 'true');
-      setIncludeZohar(params.get('zohar') === 'true');
-      setIncludeTfilot(params.get('tfilot') === 'true');
-      const urlNusach = params.get('nusach');
+      if (urlNeshama === 'true') setIncludeNeshama(true);
+      if (urlZohar === 'true') setIncludeZohar(true);
+      if (urlTfilot === 'true') setIncludeTfilot(true);
       if (urlNusach === 'baladi' || urlNusach === 'shami') setNusach(urlNusach);
       setIsGenerated(true);
     }
@@ -103,8 +108,13 @@ export default function App() {
     } else { setHebDateLetters(''); setHebDateNumbers(''); }
   }, [calcDay, calcMonth, calcYear, afterSunset]);
 
+  const mapLetter = (char: string) => {
+    const finalMap: Record<string, string> = { 'ם': 'מ', 'ן': 'נ', 'ץ': 'צ', 'ף': 'פ', 'ך': 'כ' };
+    return finalMap[char] || char;
+  };
+
   const firstNameOnly = name.split(/\s+(?:בן|בת|בר)\s+/)[0];
-  const letters = firstNameOnly.replace(/[^א-ת]/g, '').split('').map(char => ({ 'ם': 'מ', 'ן': 'נ', 'ץ': 'צ', 'ף': 'פ', 'ך': 'כ' }[char] || char));
+  const letters = firstNameOnly.replace(/[^א-ת]/g, '').split('').map(mapLetter);
 
   const theme = {
     bg: '#f9f6f0',       
@@ -118,12 +128,13 @@ export default function App() {
 
   interface RenderOptions {
     forceCenter?: boolean;
-    enlargeFirstLetter?: boolean; // הגדלה אוטומטית (עבור משנה ראשונה)
+    enlargeFirstLetter?: boolean; 
     sectionId?: string;
+    isMinchaArvit?: boolean;
   }
 
   const renderFormattedText = (text: string, options: RenderOptions = {}) => {
-    const { forceCenter = false, enlargeFirstLetter = false, sectionId = '' } = options;
+    const { forceCenter = false, enlargeFirstLetter = false, sectionId = '', isMinchaArvit = false } = options;
     const legacyH3 = ['פרק ״יש מעלין״', 'אותיות ״נשמה״'];
     const legacyBold = ["תפילה בסיום לימוד המשניות"];
     
@@ -141,6 +152,9 @@ export default function App() {
       let cleanLine = line.trim();
       if (!cleanLine) return <br key={i} />;
       
+      // מנקה סימני ^ ידניים למקרה שנשארו בקובץ כדי שלא ישבשו את הקוד
+      cleanLine = cleanLine.replace(/\^/g, '');
+
       const isDynamicH3 = cleanLine.startsWith('~') && cleanLine.endsWith('~');
       if (isDynamicH3) cleanLine = cleanLine.substring(1, cleanLine.length - 1).trim();
       const isLegacyH3 = legacyH3.some(h => line.replace(/["”“']/g, "").includes(h.replace(/["”“']/g, "")));
@@ -158,69 +172,77 @@ export default function App() {
       const isLegacyBold = legacyBold.some(h => line.replace(/["”“']/g, "").includes(h.replace(/["”“']/g, "")));
       const isBoldHeader = isDynamicBold || isLegacyBold;
 
+      // זיהוי הוראות למתפלל יעבוד אך ורק במנחה וערבית!
       const hasHebrew = /[\u05D0-\u05EA]/.test(cleanLine);
       const hasNikud = /[\u0591-\u05C7]/.test(cleanLine);
-      const isInstructionLine = hasHebrew && !hasNikud && !isBoldHeader;
+      const isInstructionLine = isMinchaArvit && hasHebrew && !hasNikud && !isBoldHeader;
 
       const anchorId = (isBoldHeader && sectionId) ? `subtitle-${sectionId}-${cleanLine.replace(/\s+/g, '-')}` : undefined;
 
-      let textToProcess = cleanLine;
+      let prefix = "";
+      let firstLetter = "";
+      let restOfLine = cleanLine;
 
-      // הגדלה אוטומטית: אם זה הקטע הראשון המבוקש להגדלה, נוסיף אליו את תגיות ה ^ באופן וירטואלי
-      if (enlargeFirstLetter && !hasEnlargedInThisBlock && !isInstructionLine && !isBoldHeader && textToProcess.length > 0) {
-        const prefixMatch = textToProcess.match(/^([א-ת\d]{1,2}[.'׳)\]-]\s+)/);
-        let prefix = "";
-        let mainText = textToProcess;
+      // מנגנון הגדלת האות הראשונה - פועל רק במשנה הראשונה בקטע, ומדלג על מספור
+      if (enlargeFirstLetter && !hasEnlargedInThisBlock && !isInstructionLine && !isBoldHeader) {
+        // מזהה תחיליות כמו "א. " או "12) "
+        const prefixMatch = cleanLine.match(/^([א-ת\d]{1,3}[.'׳"״)\]-]+\s+)/);
+        let tempMain = cleanLine;
         if (prefixMatch) {
           prefix = prefixMatch[1];
-          mainText = textToProcess.substring(prefixMatch[0].length);
+          tempMain = cleanLine.substring(prefix.length);
         }
-        if (mainText.length > 0) {
-          const firstChar = mainText.charAt(0);
-          const rest = mainText.substring(1);
-          textToProcess = `${prefix}^${firstChar}^${rest}`;
-          hasEnlargedInThisBlock = true; // מסמן שבוצעה הגדלה כדי לא להגדיל שורות הבאות
+
+        // מזהה את האות הראשונה של המילה האמיתית יחד עם הניקוד שלה
+        const letterMatch = tempMain.match(/^([א-ת][\u0591-\u05C7]*)/);
+        if (letterMatch) {
+           firstLetter = letterMatch[1];
+           restOfLine = tempMain.substring(firstLetter.length);
+           hasEnlargedInThisBlock = true;
+        } else {
+           restOfLine = cleanLine;
         }
-      } else if (!isDynamicBold && !isDynamicH3) {
-        // מחזירים את הטקסט המקורי אם לא שינינו אותו לצרכי הגדלה פנימית
-        textToProcess = line;
+      } else {
+        restOfLine = cleanLine;
       }
 
-      // פונקציה לעיבוד הטקסט, השקיפות בסוגריים והאותיות המסומנות ב-^
-      const renderParts = () => {
-        const parts = textToProcess.split(/(\([^)]+\))/g);
+      const renderParts = (textStr: string) => {
+        const parts = textStr.split(/(\([^)]+\))/g);
         return parts.map((part, j) => {
           if (!part) return null;
-          // טיפול בטקסט חלש (בתוך סוגריים)
           if (part.startsWith('(') && part.endsWith(')')) {
             return <span key={j} style={{ opacity: 0.65, fontSize: `${Math.max(14, fontSize - 2)}px` }}>{part}</span>;
           }
-          // טיפול באותיות מוגדלות באופן ידני או אוטומטי (עטופות ב-^)
-          const subParts = part.split(/\^([א-ת])\^/g);
-          return subParts.map((subPart, k) => {
-            // האינדקסים האי זוגיים הם האותיות שלכדנו בין סימני ה-^
-            if (k % 2 === 1) {
-              return <span key={`${j}-${k}`} style={{ fontSize: `${fontSize + 10}px`, fontWeight: '900', color: theme.primary, lineHeight: 1 }}>{subPart}</span>;
-            }
-            return <span key={`${j}-${k}`}>{subPart}</span>;
-          });
+          return <span key={j}>{part}</span>;
         });
       };
 
-      const pStyle = { 
-        fontWeight: isBoldHeader ? '700' : '400', 
-        fontSize: isBoldHeader ? `${fontSize + 4}px` : (isInstructionLine ? `${Math.max(14, fontSize - 3)}px` : `${fontSize}px`), 
-        marginTop: isBoldHeader ? '35px' : '5px', 
+      const pStyle = {
+        fontWeight: isBoldHeader ? '700' : '400',
+        fontSize: isBoldHeader ? `${fontSize + 4}px` : (isInstructionLine ? `${Math.max(14, fontSize - 3)}px` : `${fontSize}px`),
+        marginTop: isBoldHeader ? '35px' : '5px',
         marginBottom: isInstructionLine ? '5px' : '15px',
-        color: isBoldHeader ? theme.primary : (isInstructionLine ? '#718096' : theme.text), 
-        textAlign: isBoldHeader || forceCenter || isInstructionLine ? 'center' : ('justify' as any), 
+        color: isBoldHeader ? theme.primary : (isInstructionLine ? '#718096' : theme.text),
+        textAlign: isBoldHeader || forceCenter || isInstructionLine ? 'center' : ('justify' as any),
         lineHeight: isInstructionLine ? '1.5' : '1.9'
       };
+
+      const content = (
+        <>
+          {firstLetter && (
+            <>
+              {prefix && <span>{prefix}</span>}
+              <span style={{ fontSize: `${fontSize + 10}px`, fontWeight: '900', color: theme.primary }}>{firstLetter}</span>
+            </>
+          )}
+          {renderParts(restOfLine)}
+        </>
+      );
 
       if (anchorId && sectionHeaders.length > 1) {
         return (
           <div key={i} id={anchorId} style={{ marginTop: '20px' }}>
-            <p style={pStyle}>{renderParts()}</p>
+            <p style={pStyle}>{content}</p>
             <details className="no-print" style={{ textAlign: 'center', marginBottom: '25px' }}>
               <summary style={{ cursor: 'pointer', fontSize: '0.95rem', color: theme.primary, display: 'inline-block', padding: '5px 15px', fontWeight: 600, backgroundColor: '#edf2f7', borderRadius: '20px', border: `1px dashed ${theme.primary}` }}>
                 ⏷ ניווט לפרקים נוספים
@@ -230,18 +252,7 @@ export default function App() {
                   <a 
                     key={idx} 
                     href={`#subtitle-${sectionId}-${h.replace(/\s+/g, '-')}`}
-                    style={{
-                      padding: '5px 12px',
-                      backgroundColor: h === cleanLine ? theme.primary : '#ffffff',
-                      color: h === cleanLine ? 'white' : theme.primary,
-                      borderRadius: '15px',
-                      textDecoration: 'none',
-                      fontSize: '0.85rem',
-                      fontWeight: h === cleanLine ? 700 : 600,
-                      border: `1px solid ${theme.primary}`,
-                      transition: 'all 0.2s',
-                      whiteSpace: 'nowrap'
-                    }}
+                    style={{ padding: '5px 12px', backgroundColor: h === cleanLine ? theme.primary : '#ffffff', color: h === cleanLine ? 'white' : theme.primary, borderRadius: '15px', textDecoration: 'none', fontSize: '0.85rem', fontWeight: h === cleanLine ? 700 : 600, border: `1px solid ${theme.primary}`, transition: 'all 0.2s', whiteSpace: 'nowrap' }}
                   >
                     {h}
                   </a>
@@ -252,7 +263,7 @@ export default function App() {
         );
       }
 
-      return <p key={i} id={anchorId} style={pStyle}>{renderParts()}</p>;
+      return <p key={i} id={anchorId} style={pStyle}>{content}</p>;
     });
   };
 
@@ -268,22 +279,7 @@ export default function App() {
     return (
       <div className="no-print" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginBottom: '25px', padding: '0 10px' }}>
         {headers.map((h, i) => (
-          <a 
-            key={i} 
-            href={`#subtitle-${sectionId}-${h.replace(/\s+/g, '-')}`}
-            style={{
-              padding: '6px 14px',
-              backgroundColor: '#edf2f7',
-              color: theme.primary,
-              borderRadius: '20px',
-              textDecoration: 'none',
-              fontSize: '0.95rem',
-              fontWeight: 600,
-              border: `1px solid #cbd5e0`,
-              transition: 'all 0.2s',
-              whiteSpace: 'nowrap'
-            }}
-          >
+          <a key={i} href={`#subtitle-${sectionId}-${h.replace(/\s+/g, '-')}`} style={{ padding: '6px 14px', backgroundColor: '#edf2f7', color: theme.primary, borderRadius: '20px', textDecoration: 'none', fontSize: '0.95rem', fontWeight: 600, border: `1px solid #cbd5e0`, transition: 'all 0.2s', whiteSpace: 'nowrap' }}>
             {h}
           </a>
         ))}
@@ -324,7 +320,7 @@ export default function App() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: theme.primary, fontWeight: 600, fontSize: '1.1rem' }}>
                 <input type="checkbox" checked={includeNeshama} onChange={(e) => setIncludeNeshama(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                להוסיף תהילים של ״נשמה״
+                להוסיף תהילים ומשניות של ״נשמה״
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: theme.primary, fontWeight: 600, fontSize: '1.1rem' }}>
                 <input type="checkbox" checked={includeZohar} onChange={(e) => setIncludeZohar(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
@@ -458,10 +454,20 @@ export default function App() {
           {letters.map((char: string, index: number) => (
              <div key={`mishnah-${index}`} style={{ marginBottom: '35px' }}>
                <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
-               {/* כאן אנחנו מדליקים את enlargeFirstLetter רק למשנה הראשונה במערך */}
                {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { enlargeFirstLetter: i === 0 })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
              </div>
           ))}
+          {includeNeshama && (
+            <div style={{ marginTop: '50px', paddingTop: '30px', borderTop: '2px dashed #e2e8f0' }}>
+              <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '25px' }}>~ משניות אותיות ״נשמה״ ~</h3>
+              {['נ', 'ש', 'מ', 'ה'].map((char: string, index: number) => (
+                 <div key={`mishnah-neshama-${index}`} style={{ marginBottom: '30px' }}>
+                   <h4 style={{ color: theme.primary, textAlign: 'center', fontSize: '1.5rem', marginBottom: '15px' }}>~ אות {char} ~</h4>
+                   {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { enlargeFirstLetter: i === 0 })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
+                 </div>
+              ))}
+            </div>
+          )}
           <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
             {renderFormattedText(appData.mishnahOutro)}
           </div>
@@ -521,11 +527,11 @@ export default function App() {
           <>
             <SectionCard id="mincha" title="תפילת מנחה">
               <MiniTOC text={appData.mincha ? (appData.mincha as Record<string, string>)[nusach] : ''} sectionId="mincha" />
-              {appData.mincha ? renderFormattedText((appData.mincha as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', { sectionId: 'mincha' }) : <p>הטקסט יתווסף בהמשך</p>}
+              {appData.mincha ? renderFormattedText((appData.mincha as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', { sectionId: 'mincha', isMinchaArvit: true }) : <p>הטקסט יתווסף בהמשך</p>}
             </SectionCard>
             <SectionCard id="arvit" title="תפילת ערבית">
                <MiniTOC text={appData.arvit ? (appData.arvit as Record<string, string>)[nusach] : ''} sectionId="arvit" />
-               {appData.arvit ? renderFormattedText((appData.arvit as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', { sectionId: 'arvit' }) : <p>הטקסט יתווסף בהמשך</p>}
+               {appData.arvit ? renderFormattedText((appData.arvit as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', { sectionId: 'arvit', isMinchaArvit: true }) : <p>הטקסט יתווסף בהמשך</p>}
             </SectionCard>
           </>
         )}
