@@ -355,7 +355,7 @@ export default function App() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: theme.primary, fontWeight: 600, fontSize: '1.1rem' }}>
                 <input type="checkbox" checked={includeNeshama} onChange={(e) => setIncludeNeshama(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                להוסיף תהילים ומשניות של ״נשמה״
+                להוסיף תהילים של ״נשמה״
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: theme.primary, fontWeight: 600, fontSize: '1.1rem' }}>
                 <input type="checkbox" checked={includeZohar} onChange={(e) => setIncludeZohar(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
