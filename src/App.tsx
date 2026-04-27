@@ -143,6 +143,9 @@ export default function App() {
     }
 
     let hasEnlargedInThisBlock = false;
+    let inNeshamaSection = false;
+    let neshamaEnlargedCount = 0;
+    
     let isMultiLineWeak = false;
     let spanKeyCounter = 0;
 
@@ -150,7 +153,6 @@ export default function App() {
       let cleanLine = line.trim();
       if (!cleanLine) return <br key={i} />;
 
-      // Strip manual carets just in case they were left behind
       cleanLine = cleanLine.replace(/\^/g, '');
 
       const isDynamicH3 = cleanLine.startsWith('~') && cleanLine.endsWith('~');
@@ -159,6 +161,9 @@ export default function App() {
       const isLegacyH3 = legacyH3.some(h => line.replace(/["”“']/g, "").includes(h.replace(/["”“']/g, "")));
 
       if (isDynamicH3 || isLegacyH3) {
+        if (isMishnahOutro && cleanLine.replace(/["”“']/g, "").includes("אותיות ״נשמה״")) {
+          inNeshamaSection = true;
+        }
         return (
           <h3 key={i} className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px', marginTop: '35px' }}>
             ~ {isDynamicH3 ? textWithoutTildes : line.replace(/~/g, '')} ~
@@ -183,14 +188,12 @@ export default function App() {
       let restOfLine = textWithoutStars;
       let shouldEnlarge = false;
 
-      // 1. Auto-enlarge first mishna of the block
-      if (enlargeFirstLetter && !hasEnlargedInThisBlock && !isInstructionLine && !isBoldHeader && restOfLine.length > 0) {
+      if (enlargeFirstLetter && !hasEnlargedInThisBlock && !isInstructionLine && !isBoldHeader) {
         shouldEnlarge = true;
         hasEnlargedInThisBlock = true;
-      } 
-      // 2. Auto-enlarge Neshama mishnayot in Outro (lines starting with ד. ה. ו. ז.)
-      else if (isMishnahOutro && restOfLine.match(/^[דהוז][.'׳)\]-]+\s+/) && !isInstructionLine && !isBoldHeader) {
+      } else if (isMishnahOutro && inNeshamaSection && !isInstructionLine && !isBoldHeader && neshamaEnlargedCount < 4 && hasHebrew) {
         shouldEnlarge = true;
+        neshamaEnlargedCount++;
       }
 
       if (shouldEnlarge) {
@@ -209,7 +212,6 @@ export default function App() {
         }
       }
 
-      // Process invisible { } tags and visible ( ) tags
       const renderParts = (textStr: string) => {
         const spans: ReactNode[] = [];
         let currentBuffer = "";
@@ -336,17 +338,17 @@ export default function App() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', textAlign: 'right' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '8px', color: theme.primary, fontWeight: 600 }}>שם הנפטר/ת (לדוגמה: אדם בן רחל)</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} style={{ width: '100%', padding: '14px', fontSize: '16px', borderRadius: '8px', border: '1px solid #cbd5e0', backgroundColor: '#f8fafc', boxSizing: 'border-box', fontFamily: theme.uiFont }} />
+              <input type="text" value={name} onChange={(e) => setName(e.target.value)} style={{ width: '100%', padding: '14px', fontSize: '16px', borderRadius: '8px', border: '1px solid #cbd5e0', backgroundColor: '#f8fafc', color: theme.text, boxSizing: 'border-box', fontFamily: theme.uiFont }} />
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: '8px', color: theme.primary, fontWeight: 600 }}>מין</label>
-              <select value={gender} onChange={(e) => setGender(e.target.value as 'male' | 'female')} style={{ width: '100%', padding: '14px', fontSize: '16px', borderRadius: '8px', border: '1px solid #cbd5e0', backgroundColor: '#f8fafc', boxSizing: 'border-box', fontFamily: theme.uiFont, cursor: 'pointer' }}>
+              <select value={gender} onChange={(e) => setGender(e.target.value as 'male' | 'female')} style={{ width: '100%', padding: '14px', fontSize: '16px', borderRadius: '8px', border: '1px solid #cbd5e0', backgroundColor: '#f8fafc', color: theme.text, boxSizing: 'border-box', fontFamily: theme.uiFont, cursor: 'pointer' }}>
                 <option value="male">זכר</option><option value="female">נקבה</option>
               </select>
             </div>
             <div>
               <label style={{ display: 'block', marginBottom: '8px', color: theme.primary, fontWeight: 600 }}>נוסח התפילות (קדיש, מנחה, ערבית)</label>
-              <select value={nusach} onChange={(e) => setNusach(e.target.value as 'baladi' | 'shami')} style={{ width: '100%', padding: '14px', fontSize: '16px', borderRadius: '8px', border: '1px solid #cbd5e0', backgroundColor: '#f8fafc', boxSizing: 'border-box', fontFamily: theme.uiFont, cursor: 'pointer' }}>
+              <select value={nusach} onChange={(e) => setNusach(e.target.value as 'baladi' | 'shami')} style={{ width: '100%', padding: '14px', fontSize: '16px', borderRadius: '8px', border: '1px solid #cbd5e0', backgroundColor: '#f8fafc', color: theme.text, boxSizing: 'border-box', fontFamily: theme.uiFont, cursor: 'pointer' }}>
                 <option value="shami">שאמי</option><option value="baladi">בלדי</option>
               </select>
             </div>
@@ -371,9 +373,9 @@ export default function App() {
         <div style={{ backgroundColor: theme.card, padding: '25px', borderRadius: '16px', boxShadow: '0 6px 20px rgba(0,0,0,0.04)', width: '100%', maxWidth: '450px', textAlign: 'center', borderTop: `4px solid ${theme.accent}` }}>
           <h2 style={{ color: theme.primary, marginBottom: '10px', fontSize: '1.4rem', fontWeight: 700 }}>מחשבון תאריך עברי</h2>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', textAlign: 'right' }}>
-            <div style={{ flex: 1 }}><label style={{ display: 'block', fontSize: '0.9rem', color: theme.primary, marginBottom: '5px' }}>שנה</label><input type="number" placeholder="2026" value={calcYear} onChange={(e) => setCalcYear(e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid #cbd5e0', boxSizing: 'border-box' }}/></div>
-            <div style={{ flex: 1.5 }}><label style={{ display: 'block', fontSize: '0.9rem', color: theme.primary, marginBottom: '5px' }}>חודש</label><select value={calcMonth} onChange={(e) => setCalcMonth(e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid #cbd5e0', boxSizing: 'border-box', cursor: 'pointer' }}><option value="">בחר...</option><option value="1">ינואר</option><option value="2">פברואר</option><option value="3">מרץ</option><option value="4">אפריל</option><option value="5">מאי</option><option value="6">יוני</option><option value="7">יולי</option><option value="8">אוגוסט</option><option value="9">ספטמבר</option><option value="10">אוקטובר</option><option value="11">נובמבר</option><option value="12">דצמבר</option></select></div>
-            <div style={{ flex: 1 }}><label style={{ display: 'block', fontSize: '0.9rem', color: theme.primary, marginBottom: '5px' }}>יום</label><input type="number" placeholder="16" min="1" max="31" value={calcDay} onChange={(e) => setCalcDay(e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid #cbd5e0', boxSizing: 'border-box' }}/></div>
+            <div style={{ flex: 1 }}><label style={{ display: 'block', fontSize: '0.9rem', color: theme.primary, marginBottom: '5px' }}>שנה</label><input type="number" placeholder="2026" value={calcYear} onChange={(e) => setCalcYear(e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid #cbd5e0', backgroundColor: '#fff', color: theme.text, boxSizing: 'border-box' }}/></div>
+            <div style={{ flex: 1.5 }}><label style={{ display: 'block', fontSize: '0.9rem', color: theme.primary, marginBottom: '5px' }}>חודש</label><select value={calcMonth} onChange={(e) => setCalcMonth(e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid #cbd5e0', backgroundColor: '#fff', color: theme.text, boxSizing: 'border-box', cursor: 'pointer' }}><option value="">בחר...</option><option value="1">ינואר</option><option value="2">פברואר</option><option value="3">מרץ</option><option value="4">אפריל</option><option value="5">מאי</option><option value="6">יוני</option><option value="7">יולי</option><option value="8">אוגוסט</option><option value="9">ספטמבר</option><option value="10">אוקטובר</option><option value="11">נובמבר</option><option value="12">דצמבר</option></select></div>
+            <div style={{ flex: 1 }}><label style={{ display: 'block', fontSize: '0.9rem', color: theme.primary, marginBottom: '5px' }}>יום</label><input type="number" placeholder="16" min="1" max="31" value={calcDay} onChange={(e) => setCalcDay(e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid #cbd5e0', backgroundColor: '#fff', color: theme.text, boxSizing: 'border-box' }}/></div>
           </div>
           <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', color: theme.text, fontSize: '1.1rem', marginBottom: '20px' }}><input type="checkbox" checked={afterSunset} onChange={(e) => setAfterSunset(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />התאריך חל <strong>לאחר השקיעה</strong></label>
           {hebDateLetters && <div style={{ padding: '15px', backgroundColor: '#f0f4f8', border: `1px solid ${theme.primary}`, borderRadius: '8px', color: theme.primary }}><div style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '5px' }}>{hebDateLetters}</div><div style={{ fontSize: '1.1rem', color: '#4a5568', opacity: 0.8 }}>({hebDateNumbers})</div></div>}
