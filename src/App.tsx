@@ -355,7 +355,7 @@ export default function App() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: theme.primary, fontWeight: 600, fontSize: '1.1rem' }}>
                 <input type="checkbox" checked={includeNeshama} onChange={(e) => setIncludeNeshama(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                להוסיף תהילים של ״נשמה״
+                להוסיף תהילים ומשניות של ״נשמה״
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: theme.primary, fontWeight: 600, fontSize: '1.1rem' }}>
                 <input type="checkbox" checked={includeZohar} onChange={(e) => setIncludeZohar(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
@@ -386,7 +386,22 @@ export default function App() {
   }
 
   const mishnayotData = appData.mishnayot as Record<string, string[]>;
+  // Fetch the secondary mishnayot (this requires mishnayot2 to exist in your data.ts)
+  const mishnayotData2 = (appData as any).mishnayot2 as Record<string, string[]> || {};
   const tehillimData = appData.tehillim as Record<string, string[]>;
+
+  // This logic keeps track of letter occurrences to pull from mishnayot2 for duplicates
+  const getMishnayotForLetter = (char: string, index: number, allLetters: string[]) => {
+    // Count how many times this letter has appeared *before* the current index
+    const appearanceCount = allLetters.slice(0, index).filter(c => c === char).length;
+    
+    // If it's the second time the letter appears (appearanceCount === 1) AND we have data for it in mishnayot2
+    if (appearanceCount === 1 && mishnayotData2[char]) {
+      return mishnayotData2[char];
+    }
+    // Otherwise, return the standard mishnayot (or fallback if it's the 3rd time)
+    return mishnayotData[char];
+  };
 
   return (
     <div style={{ display: 'flex', direction: 'rtl', fontFamily: theme.bookFont, minHeight: '100vh', backgroundColor: theme.bg, flexDirection: isMobile ? 'column' : 'row' }}>
@@ -486,12 +501,15 @@ export default function App() {
 
         <SectionCard id="mishnayot" title="לימוד משניות">
           {renderFormattedText(appData.mishnahIntro)}
-          {letters.map((char: string, index: number) => (
+          {letters.map((char: string, index: number) => {
+            const blockData = getMishnayotForLetter(char, index, letters);
+            return (
              <div key={`mishnah-${index}`} style={{ marginBottom: '35px' }}>
                <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
-               {mishnayotData[char] ? mishnayotData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { enlargeFirstLetter: i === 0 })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
+               {blockData ? blockData.map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { enlargeFirstLetter: i === 0 })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
              </div>
-          ))}
+            );
+          })}
           <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
             {renderFormattedText(appData.mishnahOutro, { isMishnahOutro: true })}
           </div>
@@ -505,17 +523,6 @@ export default function App() {
                {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { forceCenter: true })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
              </div>
           ))}
-          {includeNeshama && (
-            <div style={{ marginTop: '50px', paddingTop: '30px', borderTop: '2px dashed #e2e8f0' }}>
-              <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '25px' }}>~ תהילים אותיות ״נשמה״ ~</h3>
-              {['נ', 'ש', 'מ', 'ה'].map((char: string, index: number) => (
-                 <div key={`tehillim-neshama-${index}`} style={{ marginBottom: '30px' }}>
-                   <h4 style={{ color: theme.primary, textAlign: 'center', fontSize: '1.5rem', marginBottom: '15px' }}>~ אות {char} ~</h4>
-                   {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { forceCenter: true })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
-                 </div>
-              ))}
-            </div>
-          )}
         </SectionCard>
 
         {includeZohar && (
@@ -570,4 +577,3 @@ export default function App() {
     </div>
   );
 }
-
