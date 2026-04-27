@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { appData } from './data';
 import './App.css';
 
 export default function App() {
@@ -21,6 +20,25 @@ export default function App() {
   const [afterSunset, setAfterSunset] = useState(false);
   const [hebDateLetters, setHebDateLetters] = useState('');
   const [hebDateNumbers, setHebDateNumbers] = useState('');
+  
+  // S3 Data States
+  const [appData, setAppData] = useState<any>(null);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+
+  // Fetch Data from S3
+  useEffect(() => {
+    fetch('https://azkarapp-data.s3.il-central-1.amazonaws.com/data.json')
+      .then(response => response.json())
+      .then(data => {
+        setAppData(data);
+        setIsLoadingData(false);
+      })
+      .catch(error => {
+        console.error("Error loading data:", error);
+        alert("שגיאה בטעינת הנתונים. אנא בדוק את חיבור האינטרנט שלך.");
+        setIsLoadingData(false);
+      });
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -328,6 +346,15 @@ export default function App() {
       <div style={{ color: theme.text }}>{children}</div>
     </section>
   );
+
+  // 🔴 NEW: Loading Screen Block prevents the app from crashing before data arrives
+  if (isLoadingData) {
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: theme.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', direction: 'rtl', fontFamily: theme.uiFont }}>
+        <div style={{ fontSize: '24px', color: theme.primary, fontWeight: 'bold' }}>טוען נתונים...</div>
+      </div>
+    );
+  }
 
   if (!isGenerated) {
     return (
