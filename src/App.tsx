@@ -82,7 +82,7 @@ export default function App() {
   // UPDATED SHARE LOGIC
   const handleShare = async () => {
     const shareText = `חוברת לימוד משניות ותהילים לעילוי נשמת ${name}`;
-    const shareUrl = window.location.href;
+    const shareUrl = `https://azkarapp.com/${window.location.search}`;
     
     if (isNativeApp || typeof navigator.share === 'function') {
       try {
