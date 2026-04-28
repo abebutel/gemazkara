@@ -1,3 +1,5 @@
+import { Capacitor } from '@capacitor/core';
+import { Share } from '@capacitor/share';
 import { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import './App.css';
@@ -21,6 +23,8 @@ export default function App() {
   const [hebDateLetters, setHebDateLetters] = useState('');
   const [hebDateNumbers, setHebDateNumbers] = useState('');
   
+  const isNativeApp = Capacitor.isNativePlatform();
+
   // S3 Data States
   const [appData, setAppData] = useState<any>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -39,6 +43,13 @@ export default function App() {
         setIsLoadingData(false);
       });
   }, []);
+  
+  // Snap to top when generated
+  useEffect(() => {
+    if (isGenerated) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    }
+  }, [isGenerated]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -68,15 +79,45 @@ export default function App() {
     window.history.pushState({}, '', window.location.pathname);
   };
 
+  // UPDATED SHARE LOGIC
   const handleShare = async () => {
-    const shareData = { title: 'חוברת לימוד', text: `חוברת לימוד משניות ותהילים לעילוי נשמת ${name}`, url: window.location.href };
-    try {
-      if (navigator.share) await navigator.share(shareData);
-      else { navigator.clipboard.writeText(window.location.href); alert('הקישור הועתק ללוח!'); }
-    } catch (err) { console.log('Share canceled'); }
+    const shareText = `חוברת לימוד משניות ותהילים לעילוי נשמת ${name}`;
+    const shareUrl = window.location.href;
+    
+    if (isNativeApp || typeof navigator.share === 'function') {
+      try {
+        await Share.share({
+          title: 'חוברת לימוד',
+          text: shareText,
+          url: shareUrl,
+          dialogTitle: 'שתף עם חברים'
+        });
+      } catch (err) {
+        // Silently ignore if user cancels the mobile share screen
+        console.log('Share canceled', err);
+      }
+    } else {
+      // Fallback ONLY for desktop PCs
+      navigator.clipboard.writeText(shareUrl); 
+      alert('הקישור הועתק ללוח!'); 
+    }
   };
 
-  const handlePrint = () => window.print();
+  // UPDATED PRINT LOGIC
+  const handlePrint = async () => {
+    if (isNativeApp) {
+      // Use the Cordova print plugin for the Android app
+      const win = window as any;
+      if (win.cordova && win.cordova.plugins && win.cordova.plugins.printer) {
+        win.cordova.plugins.printer.print();
+      } else {
+        alert("תכונת ההדפסה לא זמינה כרגע במכשיר זה.");
+      }
+    } else {
+      // Standard print for Web/Desktop
+      window.print();
+    }
+  };
 
   const toGematria = (num: number): string => {
     if (num <= 0) return '';
@@ -163,7 +204,6 @@ export default function App() {
     let hasEnlargedInThisBlock = false;
     let inNeshamaSection = false;
     let neshamaEnlargedCount = 0;
-    
     let isMultiLineWeak = false;
     let spanKeyCounter = 0;
 
@@ -347,7 +387,6 @@ export default function App() {
     </section>
   );
 
-  // 🔴 NEW: Loading Screen Block prevents the app from crashing before data arrives
   if (isLoadingData) {
     return (
       <div style={{ minHeight: '100vh', backgroundColor: theme.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', direction: 'rtl', fontFamily: theme.uiFont }}>
@@ -407,33 +446,29 @@ export default function App() {
           <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', color: theme.text, fontSize: '1.1rem', marginBottom: '20px' }}><input type="checkbox" checked={afterSunset} onChange={(e) => setAfterSunset(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />התאריך חל <strong>לאחר השקיעה</strong></label>
           {hebDateLetters && <div style={{ padding: '15px', backgroundColor: '#f0f4f8', border: `1px solid ${theme.primary}`, borderRadius: '8px', color: theme.primary }}><div style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '5px' }}>{hebDateLetters}</div><div style={{ fontSize: '1.1rem', color: '#4a5568', opacity: 0.8 }}>({hebDateNumbers})</div></div>}
         </div>
-        <footer style={{ maxWidth: '600px', textAlign: 'center', marginTop: '20px', color: '#718096', fontSize: '0.9rem', lineHeight: '1.6' }}><strong>אודות המערכת:</strong><br/>אפליקציית ״אזכרה״ מאפשרת יצירת חוברת אזכרה אישית להדפסה ולשיתוף בחינם. המערכת מפיקה אוטומטית סדר לימוד משניות לעילוי נשמת הנפטר (לפי אותיות השם), פרקי תהילים, אותיות נשמה, אדרא זוטא ותפילות השכבה וקדיש. בנוסף, האתר כולל מחשבון תאריך עברי לאזכרה לאיתור מדויק של יום הפטירה.</footer>
+        {!isNativeApp && (
+          <footer style={{ maxWidth: '600px', textAlign: 'center', marginTop: '20px', color: '#718096', fontSize: '0.9rem', lineHeight: '1.6' }}><strong>אודות המערכת:</strong><br/>אפליקציית ״אזכרה״ מאפשרת יצירת חוברת אזכרה אישית להדפסה ולשיתוף בחינם. המערכת מפיקה אוטומטית סדר לימוד משניות לעילוי נשמת הנפטר (לפי אותיות השם), פרקי תהילים, אותיות נשמה, אדרא זוטא ותפילות השכבה וקדיש. בנוסף, האתר כולל מחשבון תאריך עברי לאזכרה לאיתור מדויק של יום הפטירה.</footer>
+        )}
       </div>
     );
   }
 
   const mishnayotData = appData.mishnayot as Record<string, string[]>;
-  // Fetch the secondary mishnayot (this requires mishnayot2 to exist in your data.ts)
   const mishnayotData2 = (appData as any).mishnayot2 as Record<string, string[]> || {};
   const tehillimData = appData.tehillim as Record<string, string[]>;
 
-  // This logic keeps track of letter occurrences to pull from mishnayot2 for duplicates
   const getMishnayotForLetter = (char: string, index: number, allLetters: string[]) => {
-    // Count how many times this letter has appeared *before* the current index
     const appearanceCount = allLetters.slice(0, index).filter(c => c === char).length;
-    
-    // If it's the second time the letter appears (appearanceCount === 1) AND we have data for it in mishnayot2
     if (appearanceCount === 1 && mishnayotData2[char]) {
       return mishnayotData2[char];
     }
-    // Otherwise, return the standard mishnayot (or fallback if it's the 3rd time)
     return mishnayotData[char];
   };
 
   return (
     <div style={{ display: 'flex', direction: 'rtl', fontFamily: theme.bookFont, minHeight: '100vh', backgroundColor: theme.bg, flexDirection: isMobile ? 'column' : 'row' }}>
       <style>{`
-        html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+        html { scroll-behavior: auto; scroll-padding-top: 90px; }
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
         @media print {
@@ -454,9 +489,10 @@ export default function App() {
         <header className="no-print" style={{ position: 'sticky', top: 0, backgroundColor: theme.card, borderBottom: '1px solid #e2e8f0', padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 1000, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
           <button onClick={() => setIsMenuOpen(!isMenuOpen)} style={{ background: 'none', border: 'none', fontSize: '28px', color: theme.primary, cursor: 'pointer' }}>☰</button>
           <div style={{ display: 'flex', gap: '8px', fontFamily: theme.uiFont, alignItems: 'center' }}>
-            <button onClick={handleShare} style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', backgroundColor: theme.primary, color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>🔗 שתף</button>
-            <button onClick={() => setFontSize(f => f + 2)} style={{ padding: '6px 14px', borderRadius: '6px', border: `1px solid ${theme.primary}`, color: theme.primary, background: 'transparent', fontSize: '16px', fontWeight: 600 }}>A+</button>
-            <button onClick={() => setFontSize(f => Math.max(14, f - 2))} style={{ padding: '6px 14px', borderRadius: '6px', border: `1px solid ${theme.primary}`, color: theme.primary, background: 'transparent', fontSize: '16px', fontWeight: 600 }}>A-</button>
+            <button onClick={handleShare} style={{ padding: '6px 10px', borderRadius: '6px', border: 'none', backgroundColor: theme.primary, color: 'white', fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>🔗 שתף</button>
+            <button onClick={handlePrint} style={{ padding: '6px 10px', borderRadius: '6px', border: `1px solid ${theme.primary}`, backgroundColor: 'white', color: theme.primary, fontSize: '14px', fontWeight: 600, cursor: 'pointer' }}>📥 הורד</button>
+            <button onClick={() => setFontSize(f => f + 2)} style={{ padding: '6px 10px', borderRadius: '6px', border: `1px solid ${theme.primary}`, color: theme.primary, background: 'transparent', fontSize: '14px', fontWeight: 600 }}>A+</button>
+            <button onClick={() => setFontSize(f => Math.max(14, f - 2))} style={{ padding: '6px 10px', borderRadius: '6px', border: `1px solid ${theme.primary}`, color: theme.primary, background: 'transparent', fontSize: '14px', fontWeight: 600 }}>A-</button>
           </div>
         </header>
       ) : (
@@ -480,14 +516,18 @@ export default function App() {
               <button onClick={() => setFontSize(f => f + 2)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: `1px solid ${theme.primary}`, color: theme.primary, background: 'transparent', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>A+</button>
               <button onClick={() => setFontSize(f => Math.max(14, f - 2))} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: `1px solid ${theme.primary}`, color: theme.primary, background: 'transparent', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>A-</button>
             </div>
-            <button onClick={handleShare} style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '6px', border: 'none', backgroundColor: theme.primary, color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>🔗 שתף קישור</button>
-            <button onClick={handlePrint} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: `1px solid ${theme.primary}`, backgroundColor: 'transparent', color: theme.primary, fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>📥 הורד למכשיר</button>
+            {!isNativeApp && (
+              <>
+                <button onClick={handleShare} style={{ width: '100%', padding: '10px', marginBottom: '10px', borderRadius: '6px', border: 'none', backgroundColor: theme.primary, color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>🔗 שתף קישור</button>
+                <button onClick={handlePrint} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: `1px solid ${theme.primary}`, backgroundColor: 'transparent', color: theme.primary, fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>📥 הורד כ-PDF</button>
+              </>
+            )}
           </div>
         </nav>
       )}
 
       {isMobile && isMenuOpen && (
-        <nav className="no-print" style={{ position: 'fixed', top: '65px', left: 0, right: 0, backgroundColor: theme.card, padding: '20px', borderBottom: `3px solid ${theme.primary}`, zIndex: 999, boxShadow: '0 10px 20px rgba(0,0,0,0.1)', fontFamily: theme.uiFont }}>
+        <nav className="no-print" style={{ position: 'fixed', top: '65px', left: 0, right: 0, maxHeight: 'calc(100vh - 65px)', overflowY: 'auto', backgroundColor: theme.card, padding: '20px', borderBottom: `3px solid ${theme.primary}`, zIndex: 999, boxShadow: '0 10px 20px rgba(0,0,0,0.1)', fontFamily: theme.uiFont }}>
           <ul style={{ listStyle: 'none', padding: 0, lineHeight: '3', margin: 0, fontSize: '1.2rem' }}>
             <li style={{ marginBottom: '10px', paddingBottom: '10px', borderBottom: '2px solid #e2e8f0' }}><button onClick={() => { setIsMenuOpen(false); handleReset(); }} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: `2px solid ${theme.primary}`, backgroundColor: '#f0f4f8', color: theme.primary, fontSize: '16px', fontWeight: 800, cursor: 'pointer' }}>🏠 חזור לעמוד הראשי</button></li>
             <li><a href="#tefillah" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>תפילה קודם הלימוד</a></li>
@@ -499,10 +539,6 @@ export default function App() {
             <li><a href="#kaddish" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>קדיש</a></li>
             {includeTfilot && <li><a href="#mincha" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text, borderBottom: '1px solid #f1f5f9' }}>מנחה</a></li>}
             {includeTfilot && <li><a href="#arvit" onClick={() => setIsMenuOpen(false)} style={{ display: 'block', textDecoration: 'none', color: theme.text }}>ערבית</a></li>}
-            <li style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
-              <button onClick={() => { setIsMenuOpen(false); handleShare(); }} style={{ width: '100%', padding: '12px', marginBottom: '10px', borderRadius: '6px', border: 'none', backgroundColor: theme.primary, color: 'white', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>🔗 שתף קישור</button>
-              <button onClick={() => { setIsMenuOpen(false); handlePrint(); }} style={{ width: '100%', padding: '12px', borderRadius: '6px', border: `1px solid ${theme.primary}`, backgroundColor: 'transparent', color: theme.primary, fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>📥 הורד למכשיר</button>
-            </li>
           </ul>
         </nav>
       )}
