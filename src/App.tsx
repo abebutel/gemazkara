@@ -34,6 +34,21 @@ export default function App() {
     fetch('https://azkarapp-data.s3.il-central-1.amazonaws.com/data.json')
       .then(response => response.json())
       .then(data => {
+        // --- FRONTEND DATA PATCHER ---
+        // Fixes S3 data formatting issues on the fly without bloating the UI code
+        if (data.mishnahOutro) {
+          data.mishnahOutro = data.mishnahOutro
+            .replace(/\*פרק "יש מעלין"\*/g, '~פרק "יש מעלין"~')
+            .replace(/\*אותיות "נשמה"\*/g, '~אותיות "נשמה"~')
+            .replace(/תפילה בסיום לימוד המשניות/g, '~תפילה בסיום לימוד המשניות~')
+            .replace(/רִבִּי חֲנַנְיָא[\s\S]*?יַגְדִּיל תּוֹרָה וְיַאְדִּיר:\n*/, '') // Removes Rabbi Chananya
+            .trim();
+        }
+        if (data.mincha && data.mincha.baladi) {
+           data.mincha.baladi = data.mincha.baladi.replace(/\nקדיש דעתיד\n/g, '\n~קדיש דעתיד~\n');
+        }
+        // ------------------------------
+        
         setAppData(data);
         setIsLoadingData(false);
       })
@@ -184,8 +199,6 @@ export default function App() {
 
   const renderFormattedText = (text: string, options: RenderOptions = {}) => {
     const { forceCenter = false, enlargeFirstLetter = false, sectionId = '', isMinchaArvit = false, isMishnahOutro = false } = options;
-    const legacyH3 = ['פרק ״יש מעלין״', 'אותיות ״נשמה״'];
-    const legacyBold = ["תפילה בסיום לימוד המשניות"];
     
     let sectionHeaders: string[] = [];
     if (sectionId) {
@@ -211,26 +224,12 @@ export default function App() {
       let isBold = false;
       let headerText = cleanLine;
 
-      // Check for legacy headers
-      const isLegacyH3Match = legacyH3.some(h => cleanLine.replace(/["”“'״׳*~]/g, "").includes(h.replace(/["”“'״׳*~]/g, "")));
-      const isLegacyBoldMatch = legacyBold.some(h => cleanLine.replace(/["”“'״׳*~]/g, "").includes(h.replace(/["”“'״׳*~]/g, "")));
-
       if (cleanLine.startsWith('~') && cleanLine.endsWith('~')) {
           isH3 = true;
           headerText = cleanLine.substring(1, cleanLine.length - 1).trim();
       } else if (cleanLine.startsWith('*') && cleanLine.endsWith('*')) {
           isBold = true;
           headerText = cleanLine.substring(1, cleanLine.length - 1).trim();
-      }
-
-      // Apply legacy promotion/formatting overrides
-      if (isLegacyH3Match) {
-          isH3 = true;
-          isBold = false;
-          headerText = cleanLine.replace(/[*~]/g, '').trim(); 
-      } else if (isLegacyBoldMatch && !isH3) {
-          isBold = true;
-          headerText = cleanLine.replace(/[*~]/g, '').trim();
       }
 
       const isHeader = isH3 || isBold;
@@ -448,7 +447,7 @@ export default function App() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: theme.primary, fontWeight: 600, fontSize: '1.1rem' }}>
                 <input type="checkbox" checked={includeNeshama} onChange={(e) => setIncludeNeshama(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                להוסיף אותיות ״נשמה״ (משניות ותהילים)
+                להוסיף תהילים של ״נשמה״
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: theme.primary, fontWeight: 600, fontSize: '1.1rem' }}>
                 <input type="checkbox" checked={includeZohar} onChange={(e) => setIncludeZohar(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
@@ -491,48 +490,6 @@ export default function App() {
     }
     return mishnayotData[char];
   };
-
-  // PROGRAMMATICALLY EXTRACT RABBI CHANANYA & SPLIT NESHAMA
-  const newMishnahOutroLines: string[] = [];
-  const neshamaLines: string[] = [];
-  const rabbiChananyaLines: string[] = [];
-  const siumTefillahLines: string[] = [];
-  let currentSection = 'general';
-
-  if (appData.mishnahOutro) {
-    appData.mishnahOutro.split('\n').forEach((line: string) => {
-      // Stripping Niqqud, Quotes, and Header symbols strictly for search purposes
-      const cleanLineForSection = line.replace(/[\u0591-\u05C7]/g, '').replace(/["”“'״׳*~]/g, "").trim();
-      
-      if (cleanLineForSection === "אותיות נשמה") {
-        currentSection = 'neshama';
-      } else if (cleanLineForSection.startsWith("רבי חנניה בן עקשיא") || cleanLineForSection.startsWith("רבי חנניא בן עקשיא")) {
-        currentSection = 'rabbi';
-      } else if (cleanLineForSection === "תפילה בסיום לימוד המשניות") {
-        currentSection = 'sium';
-      }
-
-      if (currentSection === 'general') {
-        newMishnahOutroLines.push(line);
-      } else if (currentSection === 'neshama') {
-        neshamaLines.push(line);
-      } else if (currentSection === 'rabbi') {
-        rabbiChananyaLines.push(line);
-      } else if (currentSection === 'sium') {
-        siumTefillahLines.push(line);
-      }
-    });
-  }
-
-  const mishnahOutroToRender = [...newMishnahOutroLines];
-  if (includeNeshama) {
-    mishnahOutroToRender.push(...neshamaLines);
-  }
-  // Safely appending the Sium Tefillah BACK onto the end of the section
-  mishnahOutroToRender.push(...siumTefillahLines);
-  
-  const finalMishnahOutro = mishnahOutroToRender.join('\n');
-  const rabbiChananyaText = rabbiChananyaLines.join('\n');
 
   return (
     <div style={{ display: 'flex', direction: 'rtl', fontFamily: theme.bookFont, minHeight: '100vh', backgroundColor: theme.bg, flexDirection: isMobile ? 'column' : 'row' }}>
@@ -643,7 +600,7 @@ export default function App() {
             );
           })}
           <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
-            {renderFormattedText(finalMishnahOutro, { isMishnahOutro: true })}
+            {renderFormattedText(appData.mishnahOutro, { isMishnahOutro: true })}
           </div>
         </SectionCard>
 
@@ -684,11 +641,9 @@ export default function App() {
           <p style={{ textAlign: 'center', fontWeight: 'bold', color: theme.primary, marginTop: '25px', opacity: 0.8 }}>
             (אם יש עשרה, אומרים רבי חנניה וקדיש על ישראל)
           </p>
-          {rabbiChananyaText && (
-            <div style={{ marginTop: '25px', paddingTop: '20px', borderTop: '1px dashed #cbd5e0' }}>
-               {renderFormattedText(rabbiChananyaText, { forceCenter: true })}
-            </div>
-          )}
+          <div style={{ marginTop: '25px', paddingTop: '20px', borderTop: '1px dashed #cbd5e0' }}>
+             {renderFormattedText("רִבִּי חֲנַנְיָא בֶּן עֲקַשְׁיָא אוֹמֵר, רָצָה הַקָּדוֹשׁ בָּרוּךְ הוּא לְזַכּוֹת אֶת יִשְׂרָאֵל, לְפִיכָּךְ הִרְבָּה לָהֶם תּוֹרָה וּמִצְוֹת. שֶׁנֶּאֱמָר: יְהֹוָה חָפֵץ לְמַעַן צִדְקוֹ. יַגְדִּיל תּוֹרָה וְיַאְדִּיר:", { forceCenter: true })}
+          </div>
         </SectionCard>
 
         <SectionCard id="hashkava" title="השכבה">
