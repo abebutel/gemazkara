@@ -79,7 +79,6 @@ export default function App() {
     window.history.pushState({}, '', window.location.pathname);
   };
 
-  // UPDATED SHARE LOGIC
   const handleShare = async () => {
     const shareText = `חוברת לימוד משניות ותהילים לעילוי נשמת ${name}`;
     const shareUrl = `https://azkarapp.com/${window.location.search}`;
@@ -93,20 +92,16 @@ export default function App() {
           dialogTitle: 'שתף עם חברים'
         });
       } catch (err) {
-        // Silently ignore if user cancels the mobile share screen
         console.log('Share canceled', err);
       }
     } else {
-      // Fallback ONLY for desktop PCs
       navigator.clipboard.writeText(shareUrl); 
       alert('הקישור הועתק ללוח!'); 
     }
   };
 
-  // UPDATED PRINT LOGIC
   const handlePrint = async () => {
     if (isNativeApp) {
-      // Use the Cordova print plugin for the Android app
       const win = window as any;
       if (win.cordova && win.cordova.plugins && win.cordova.plugins.printer) {
         win.cordova.plugins.printer.print();
@@ -114,7 +109,6 @@ export default function App() {
         alert("תכונת ההדפסה לא זמינה כרגע במכשיר זה.");
       }
     } else {
-      // Standard print for Web/Desktop
       window.print();
     }
   };
@@ -197,7 +191,7 @@ export default function App() {
     if (sectionId) {
       sectionHeaders = text.split('\n')
         .map(line => line.trim())
-        .filter(line => line.startsWith('*') && line.endsWith('*'))
+        .filter(line => (line.startsWith('*') && line.endsWith('*')) || (line.startsWith('~') && line.endsWith('~')))
         .map(line => line.substring(1, line.length - 1).trim());
     }
 
@@ -216,10 +210,10 @@ export default function App() {
       const isDynamicH3 = cleanLine.startsWith('~') && cleanLine.endsWith('~');
       let textWithoutTildes = cleanLine;
       if (isDynamicH3) textWithoutTildes = cleanLine.substring(1, cleanLine.length - 1).trim();
-      const isLegacyH3 = legacyH3.some(h => line.replace(/["”“']/g, "").includes(h.replace(/["”“']/g, "")));
+      const isLegacyH3 = legacyH3.some(h => line.replace(/["”“'״׳]/g, "").includes(h.replace(/["”“'״׳]/g, "")));
 
       if (isDynamicH3 || isLegacyH3) {
-        if (isMishnahOutro && cleanLine.replace(/["”“']/g, "").includes("אותיות ״נשמה״")) {
+        if (isMishnahOutro && cleanLine.replace(/["”“'״׳]/g, "").includes("אותיות נשמה")) {
           inNeshamaSection = true;
         }
         return (
@@ -232,7 +226,7 @@ export default function App() {
       const isDynamicBold = cleanLine.startsWith('*') && cleanLine.endsWith('*');
       let textWithoutStars = cleanLine;
       if (isDynamicBold) textWithoutStars = cleanLine.substring(1, cleanLine.length - 1).trim();
-      const isLegacyBold = legacyBold.some(h => line.replace(/["”“']/g, "").includes(h.replace(/["”“']/g, "")));
+      const isLegacyBold = legacyBold.some(h => line.replace(/["”“'״׳]/g, "").includes(h.replace(/["”“'״׳]/g, "")));
       const isBoldHeader = isDynamicBold || isLegacyBold;
 
       const hasHebrew = /[\u05D0-\u05EA]/.test(textWithoutStars);
@@ -364,7 +358,7 @@ export default function App() {
     if (!text) return null;
     const headers = text.split('\n')
       .map(line => line.trim())
-      .filter(line => line.startsWith('*') && line.endsWith('*'))
+      .filter(line => (line.startsWith('*') && line.endsWith('*')) || (line.startsWith('~') && line.endsWith('~')))
       .map(line => line.substring(1, line.length - 1).trim());
 
     if (headers.length === 0) return null;
@@ -421,7 +415,7 @@ export default function App() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: theme.primary, fontWeight: 600, fontSize: '1.1rem' }}>
                 <input type="checkbox" checked={includeNeshama} onChange={(e) => setIncludeNeshama(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
-                להוסיף תהילים של ״נשמה״
+                להוסיף אותיות ״נשמה״ (משניות ותהילים)
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: theme.primary, fontWeight: 600, fontSize: '1.1rem' }}>
                 <input type="checkbox" checked={includeZohar} onChange={(e) => setIncludeZohar(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
@@ -464,6 +458,38 @@ export default function App() {
     }
     return mishnayotData[char];
   };
+
+  // PROGRAMMATICALLY EXTRACT RABBI CHANANYA & SPLIT NESHAMA
+  const newMishnahOutroLines: string[] = [];
+  const neshamaLines: string[] = [];
+  const rabbiChananyaLines: string[] = [];
+  let currentSection = 'general';
+
+  if (appData.mishnahOutro) {
+    appData.mishnahOutro.split('\n').forEach((line: string) => {
+      const cleanLine = line.replace(/[\u0591-\u05C7]/g, '').replace(/["”“'״׳]/g, "");
+      if (cleanLine.includes("אותיות נשמה")) {
+        currentSection = 'neshama';
+      } else if (cleanLine.includes("רבי חנניה בן עקשיא") || cleanLine.includes("רבי חנניא בן עקשיא")) {
+        currentSection = 'rabbi';
+      }
+
+      if (currentSection === 'general') {
+        newMishnahOutroLines.push(line);
+      } else if (currentSection === 'neshama') {
+        neshamaLines.push(line);
+      } else if (currentSection === 'rabbi') {
+        rabbiChananyaLines.push(line);
+      }
+    });
+  }
+
+  const mishnahOutroToRender = [...newMishnahOutroLines];
+  if (includeNeshama) {
+    mishnahOutroToRender.push(...neshamaLines);
+  }
+  const finalMishnahOutro = mishnahOutroToRender.join('\n');
+  const rabbiChananyaText = rabbiChananyaLines.join('\n');
 
   return (
     <div style={{ display: 'flex', direction: 'rtl', fontFamily: theme.bookFont, minHeight: '100vh', backgroundColor: theme.bg, flexDirection: isMobile ? 'column' : 'row' }}>
@@ -574,7 +600,7 @@ export default function App() {
             );
           })}
           <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
-            {renderFormattedText(appData.mishnahOutro, { isMishnahOutro: true })}
+            {renderFormattedText(finalMishnahOutro, { isMishnahOutro: true })}
           </div>
         </SectionCard>
 
@@ -586,6 +612,17 @@ export default function App() {
                {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { forceCenter: true })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
              </div>
           ))}
+          {includeNeshama && (
+            <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '2px dashed #e2e8f0' }}>
+              <h3 className="print-heading" style={{ color: theme.primary, textAlign: 'center', fontSize: '2rem', marginBottom: '25px' }}>~ תהילים לאותיות נשמה ~</h3>
+              {['נ', 'ש', 'מ', 'ה'].map((char: string, index: number) => (
+               <div key={`tehillim-neshama-${index}`} style={{ marginBottom: '30px' }}>
+                 <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
+                 {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { forceCenter: true })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
+               </div>
+              ))}
+            </div>
+          )}
         </SectionCard>
 
         {includeZohar && (
@@ -604,6 +641,11 @@ export default function App() {
           <p style={{ textAlign: 'center', fontWeight: 'bold', color: theme.primary, marginTop: '25px', opacity: 0.8 }}>
             (אם יש עשרה, אומרים רבי חנניה וקדיש על ישראל)
           </p>
+          {rabbiChananyaText && (
+            <div style={{ marginTop: '25px', paddingTop: '20px', borderTop: '1px dashed #cbd5e0' }}>
+               {renderFormattedText(rabbiChananyaText, { forceCenter: true })}
+            </div>
+          )}
         </SectionCard>
 
         <SectionCard id="hashkava" title="השכבה">
@@ -620,12 +662,22 @@ export default function App() {
         {includeTfilot && (
           <>
             <SectionCard id="mincha" title="תפילת מנחה">
-              <MiniTOC text={appData.mincha ? (appData.mincha as Record<string, string>)[nusach] : ''} sectionId="mincha" />
-              {appData.mincha ? renderFormattedText((appData.mincha as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', { sectionId: 'mincha', isMinchaArvit: true }) : <p>הטקסט יתווסף בהמשך</p>}
+              <MiniTOC 
+                text={appData.mincha ? (appData.mincha as Record<string, string>)[nusach] : ''} 
+                sectionId="mincha" 
+              />
+              {appData.mincha 
+                ? renderFormattedText((appData.mincha as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', { sectionId: 'mincha', isMinchaArvit: true }) 
+                : <p>הטקסט יתווסף בהמשך</p>}
             </SectionCard>
             <SectionCard id="arvit" title="תפילת ערבית">
-               <MiniTOC text={appData.arvit ? (appData.arvit as Record<string, string>)[nusach] : ''} sectionId="arvit" />
-               {appData.arvit ? renderFormattedText((appData.arvit as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', { sectionId: 'arvit', isMinchaArvit: true }) : <p>הטקסט יתווסף בהמשך</p>}
+               <MiniTOC 
+                 text={appData.arvit ? (appData.arvit as Record<string, string>)[nusach] : ''} 
+                 sectionId="arvit" 
+               />
+               {appData.arvit 
+                 ? renderFormattedText((appData.arvit as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', { sectionId: 'arvit', isMinchaArvit: true }) 
+                 : <p>הטקסט יתווסף בהמשך</p>}
             </SectionCard>
           </>
         )}
