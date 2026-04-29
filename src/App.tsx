@@ -207,43 +207,48 @@ export default function App() {
 
       cleanLine = cleanLine.replace(/\^/g, '');
 
-      const isDynamicH3 = cleanLine.startsWith('~') && cleanLine.endsWith('~');
-      let textWithoutTildes = cleanLine;
-      if (isDynamicH3) textWithoutTildes = cleanLine.substring(1, cleanLine.length - 1).trim();
-      const isLegacyH3 = legacyH3.some(h => line.replace(/["”“'״׳]/g, "").includes(h.replace(/["”“'״׳]/g, "")));
+      let isH3 = false;
+      let isBold = false;
+      let headerText = cleanLine;
 
-      if (isDynamicH3 || isLegacyH3) {
-        if (isMishnahOutro && cleanLine.replace(/["”“'״׳]/g, "").includes("אותיות נשמה")) {
-          inNeshamaSection = true;
-        }
-        return (
-          <h3 key={i} className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px', marginTop: '35px' }}>
-            ~ {isDynamicH3 ? textWithoutTildes : line.replace(/~/g, '')} ~
-          </h3>
-        );
+      // Check for legacy headers
+      const isLegacyH3Match = legacyH3.some(h => cleanLine.replace(/["”“'״׳*~]/g, "").includes(h.replace(/["”“'״׳*~]/g, "")));
+      const isLegacyBoldMatch = legacyBold.some(h => cleanLine.replace(/["”“'״׳*~]/g, "").includes(h.replace(/["”“'״׳*~]/g, "")));
+
+      if (cleanLine.startsWith('~') && cleanLine.endsWith('~')) {
+          isH3 = true;
+          headerText = cleanLine.substring(1, cleanLine.length - 1).trim();
+      } else if (cleanLine.startsWith('*') && cleanLine.endsWith('*')) {
+          isBold = true;
+          headerText = cleanLine.substring(1, cleanLine.length - 1).trim();
       }
 
-      const isDynamicBold = cleanLine.startsWith('*') && cleanLine.endsWith('*');
-      let textWithoutStars = cleanLine;
-      if (isDynamicBold) textWithoutStars = cleanLine.substring(1, cleanLine.length - 1).trim();
-      const isLegacyBold = legacyBold.some(h => line.replace(/["”“'״׳]/g, "").includes(h.replace(/["”“'״׳]/g, "")));
-      const isBoldHeader = isDynamicBold || isLegacyBold;
+      // Apply legacy promotion/formatting overrides
+      if (isLegacyH3Match) {
+          isH3 = true;
+          isBold = false;
+          headerText = cleanLine.replace(/[*~]/g, '').trim(); 
+      } else if (isLegacyBoldMatch && !isH3) {
+          isBold = true;
+          headerText = cleanLine.replace(/[*~]/g, '').trim();
+      }
 
-      const hasHebrew = /[\u05D0-\u05EA]/.test(textWithoutStars);
-      const hasNikud = /[\u0591-\u05C7]/.test(textWithoutStars);
-      const isInstructionLine = isMinchaArvit && hasHebrew && !hasNikud && !isBoldHeader;
+      const isHeader = isH3 || isBold;
+      const hasHebrew = /[\u05D0-\u05EA]/.test(headerText);
+      const hasNikud = /[\u0591-\u05C7]/.test(headerText);
+      const isInstructionLine = isMinchaArvit && hasHebrew && !hasNikud && !isHeader;
 
-      const anchorId = (isBoldHeader && sectionId) ? `subtitle-${sectionId}-${textWithoutStars.replace(/\s+/g, '-')}` : undefined;
+      const anchorId = (isHeader && sectionId) ? `subtitle-${sectionId}-${headerText.replace(/\s+/g, '-')}` : undefined;
 
       let prefix = "";
       let firstLetter = "";
-      let restOfLine = textWithoutStars;
+      let restOfLine = isHeader ? headerText : cleanLine;
       let shouldEnlarge = false;
 
-      if (enlargeFirstLetter && !hasEnlargedInThisBlock && !isInstructionLine && !isBoldHeader) {
+      if (enlargeFirstLetter && !hasEnlargedInThisBlock && !isInstructionLine && !isHeader) {
         shouldEnlarge = true;
         hasEnlargedInThisBlock = true;
-      } else if (isMishnahOutro && inNeshamaSection && !isInstructionLine && !isBoldHeader && neshamaEnlargedCount < 4 && hasHebrew) {
+      } else if (isMishnahOutro && inNeshamaSection && !isInstructionLine && !isHeader && neshamaEnlargedCount < 4 && hasHebrew) {
         shouldEnlarge = true;
         neshamaEnlargedCount++;
       }
@@ -300,16 +305,6 @@ export default function App() {
         return spans;
       };
 
-      const pStyle = {
-        fontWeight: isBoldHeader ? '700' : '400',
-        fontSize: isBoldHeader ? `${fontSize + 4}px` : (isInstructionLine ? `${Math.max(14, fontSize - 3)}px` : `${fontSize}px`),
-        marginTop: isBoldHeader ? '35px' : '5px',
-        marginBottom: isInstructionLine ? '5px' : '15px',
-        color: isBoldHeader ? theme.primary : (isInstructionLine ? '#718096' : theme.text),
-        textAlign: isBoldHeader || forceCenter || isInstructionLine ? 'center' : ('justify' as any),
-        lineHeight: isInstructionLine ? '1.5' : '1.9'
-      };
-
       const content = (
         <>
           {firstLetter ? (
@@ -326,10 +321,9 @@ export default function App() {
         </>
       );
 
-      if (anchorId && sectionHeaders.length > 1) {
-        return (
-          <div key={i} id={anchorId} style={{ marginTop: '20px' }}>
-            <p style={pStyle}>{content}</p>
+      const renderNavDetails = () => {
+          if (!anchorId || sectionHeaders.length <= 1) return null;
+          return (
             <details className="no-print" style={{ textAlign: 'center', marginBottom: '25px' }}>
               <summary style={{ cursor: 'pointer', fontSize: '0.95rem', color: theme.primary, display: 'inline-block', padding: '5px 15px', fontWeight: 600, backgroundColor: '#edf2f7', borderRadius: '20px', border: `1px dashed ${theme.primary}` }}>
                 ⏷ ניווט לפרקים נוספים
@@ -339,18 +333,57 @@ export default function App() {
                   <a 
                     key={idx} 
                     href={`#subtitle-${sectionId}-${h.replace(/\s+/g, '-')}`}
-                    style={{ padding: '5px 12px', backgroundColor: h === textWithoutStars ? theme.primary : '#ffffff', color: h === textWithoutStars ? 'white' : theme.primary, borderRadius: '15px', textDecoration: 'none', fontSize: '0.85rem', fontWeight: h === textWithoutStars ? 700 : 600, border: `1px solid ${theme.primary}`, transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                    style={{ padding: '5px 12px', backgroundColor: h === headerText ? theme.primary : '#ffffff', color: h === headerText ? 'white' : theme.primary, borderRadius: '15px', textDecoration: 'none', fontSize: '0.85rem', fontWeight: h === headerText ? 700 : 600, border: `1px solid ${theme.primary}`, transition: 'all 0.2s', whiteSpace: 'nowrap' }}
                   >
                     {h}
                   </a>
                 ))}
               </div>
             </details>
-          </div>
-        );
+          );
+      };
+
+      if (isH3) {
+          if (isMishnahOutro && cleanLine.replace(/["”“'״׳*~]/g, "").includes("אותיות נשמה")) {
+            inNeshamaSection = true;
+          }
+          const h3Element = (
+            <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px', marginTop: '35px' }}>
+              ~ {headerText} ~
+            </h3>
+          );
+
+          if (anchorId) {
+              return (
+                <div key={i} id={anchorId} style={{ marginTop: '20px' }}>
+                  {h3Element}
+                  {renderNavDetails()}
+                </div>
+              );
+          }
+          return <div key={i}>{h3Element}</div>;
       }
 
-      return <p key={i} id={anchorId} style={pStyle}>{content}</p>;
+      const pStyle = {
+        fontWeight: isBold ? '700' : '400',
+        fontSize: isBold ? `${fontSize + 4}px` : (isInstructionLine ? `${Math.max(14, fontSize - 3)}px` : `${fontSize}px`),
+        marginTop: isBold ? '35px' : '5px',
+        marginBottom: isInstructionLine ? '5px' : '15px',
+        color: isBold ? theme.primary : (isInstructionLine ? '#718096' : theme.text),
+        textAlign: isBold || forceCenter || isInstructionLine ? 'center' : ('justify' as any),
+        lineHeight: isInstructionLine ? '1.5' : '1.9'
+      };
+
+      if (anchorId) {
+          return (
+            <div key={i} id={anchorId} style={{ marginTop: '20px' }}>
+              <p style={pStyle}>{content}</p>
+              {renderNavDetails()}
+            </div>
+          );
+      }
+
+      return <p key={i} style={pStyle}>{content}</p>;
     });
   };
 
@@ -463,15 +496,20 @@ export default function App() {
   const newMishnahOutroLines: string[] = [];
   const neshamaLines: string[] = [];
   const rabbiChananyaLines: string[] = [];
+  const siumTefillahLines: string[] = [];
   let currentSection = 'general';
 
   if (appData.mishnahOutro) {
     appData.mishnahOutro.split('\n').forEach((line: string) => {
-      const cleanLine = line.replace(/[\u0591-\u05C7]/g, '').replace(/["”“'״׳]/g, "");
-      if (cleanLine.includes("אותיות נשמה")) {
+      // Stripping Niqqud, Quotes, and Header symbols strictly for search purposes
+      const cleanLineForSection = line.replace(/[\u0591-\u05C7]/g, '').replace(/["”“'״׳*~]/g, "").trim();
+      
+      if (cleanLineForSection === "אותיות נשמה") {
         currentSection = 'neshama';
-      } else if (cleanLine.includes("רבי חנניה בן עקשיא") || cleanLine.includes("רבי חנניא בן עקשיא")) {
+      } else if (cleanLineForSection.startsWith("רבי חנניה בן עקשיא") || cleanLineForSection.startsWith("רבי חנניא בן עקשיא")) {
         currentSection = 'rabbi';
+      } else if (cleanLineForSection === "תפילה בסיום לימוד המשניות") {
+        currentSection = 'sium';
       }
 
       if (currentSection === 'general') {
@@ -480,6 +518,8 @@ export default function App() {
         neshamaLines.push(line);
       } else if (currentSection === 'rabbi') {
         rabbiChananyaLines.push(line);
+      } else if (currentSection === 'sium') {
+        siumTefillahLines.push(line);
       }
     });
   }
@@ -488,6 +528,9 @@ export default function App() {
   if (includeNeshama) {
     mishnahOutroToRender.push(...neshamaLines);
   }
+  // Safely appending the Sium Tefillah BACK onto the end of the section
+  mishnahOutroToRender.push(...siumTefillahLines);
+  
   const finalMishnahOutro = mishnahOutroToRender.join('\n');
   const rabbiChananyaText = rabbiChananyaLines.join('\n');
 
