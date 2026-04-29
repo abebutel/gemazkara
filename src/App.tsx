@@ -31,7 +31,7 @@ export default function App() {
 
   // Fetch Data from S3
   useEffect(() => {
-    fetch('https://azkarapp-data.s3.il-central-1.amazonaws.com/data.json')
+    fetch('duol4ui4c7l6x.cloudfront.net/data.json')
       .then(response => response.json())
       .then(data => {
         // --- FRONTEND DATA PATCHER ---
