@@ -22,7 +22,7 @@ export default function App() {
   const [afterSunset, setAfterSunset] = useState(false);
   const [hebDateLetters, setHebDateLetters] = useState('');
   const [hebDateNumbers, setHebDateNumbers] = useState('');
-  
+
   const isNativeApp = Capacitor.isNativePlatform();
 
   // S3 Data States
@@ -31,7 +31,7 @@ export default function App() {
 
   // Fetch Data from S3
   useEffect(() => {
-    fetch('duol4ui4c7l6x.cloudfront.net/data.json')
+    fetch('https://duol4ui4c7l6x.cloudfront.net/data.json')
       .then(response => response.json())
       .then(data => {
         // --- FRONTEND DATA PATCHER ---
@@ -45,10 +45,10 @@ export default function App() {
             .trim();
         }
         if (data.mincha && data.mincha.baladi) {
-           data.mincha.baladi = data.mincha.baladi.replace(/\nקדיש דעתיד\n/g, '\n~קדיש דעתיד~\n');
+          data.mincha.baladi = data.mincha.baladi.replace(/\nקדיש דעתיד\n/g, '\n~קדיש דעתיד~\n');
         }
         // ------------------------------
-        
+
         setAppData(data);
         setIsLoadingData(false);
       })
@@ -58,7 +58,7 @@ export default function App() {
         setIsLoadingData(false);
       });
   }, []);
-  
+
   // Snap to top when generated
   useEffect(() => {
     if (isGenerated) {
@@ -97,7 +97,7 @@ export default function App() {
   const handleShare = async () => {
     const shareText = `חוברת לימוד משניות ותהילים לעילוי נשמת ${name}`;
     const shareUrl = `https://azkarapp.com/${window.location.search}`;
-    
+
     if (isNativeApp || typeof navigator.share === 'function') {
       try {
         await Share.share({
@@ -110,8 +110,8 @@ export default function App() {
         console.log('Share canceled', err);
       }
     } else {
-      navigator.clipboard.writeText(shareUrl); 
-      alert('הקישור הועתק ללוח!'); 
+      navigator.clipboard.writeText(shareUrl);
+      alert('הקישור הועתק ללוח!');
     }
   };
 
@@ -141,8 +141,8 @@ export default function App() {
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile(); 
-    window.addEventListener('resize', checkMobile); 
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
@@ -180,18 +180,18 @@ export default function App() {
   const letters = firstNameOnly.replace(/[^א-ת]/g, '').split('').map(mapLetter);
 
   const theme = {
-    bg: '#f9f6f0',       
-    primary: '#1a365d',  
-    accent: '#d4af37',   
-    card: '#ffffff',     
-    text: '#2d3748',     
+    bg: '#f9f6f0',
+    primary: '#1a365d',
+    accent: '#d4af37',
+    card: '#ffffff',
+    text: '#2d3748',
     uiFont: "'Assistant', sans-serif",
     bookFont: "'Frank Ruhl Libre', serif"
   };
 
   interface RenderOptions {
     forceCenter?: boolean;
-    enlargeFirstLetter?: boolean; 
+    enlargeFirstLetter?: boolean;
     sectionId?: string;
     isMinchaArvit?: boolean;
     isMishnahOutro?: boolean;
@@ -199,7 +199,7 @@ export default function App() {
 
   const renderFormattedText = (text: string, options: RenderOptions = {}) => {
     const { forceCenter = false, enlargeFirstLetter = false, sectionId = '', isMinchaArvit = false, isMishnahOutro = false } = options;
-    
+
     let sectionHeaders: string[] = [];
     if (sectionId) {
       sectionHeaders = text.split('\n')
@@ -225,11 +225,11 @@ export default function App() {
       let headerText = cleanLine;
 
       if (cleanLine.startsWith('~') && cleanLine.endsWith('~')) {
-          isH3 = true;
-          headerText = cleanLine.substring(1, cleanLine.length - 1).trim();
+        isH3 = true;
+        headerText = cleanLine.substring(1, cleanLine.length - 1).trim();
       } else if (cleanLine.startsWith('*') && cleanLine.endsWith('*')) {
-          isBold = true;
-          headerText = cleanLine.substring(1, cleanLine.length - 1).trim();
+        isBold = true;
+        headerText = cleanLine.substring(1, cleanLine.length - 1).trim();
       }
 
       const isHeader = isH3 || isBold;
@@ -262,9 +262,9 @@ export default function App() {
 
         const letterMatch = tempMain.match(/^([^א-ת\uFB1D-\uFB4F]*)([א-ת\uFB1D-\uFB4F][\u0591-\u05C7]*)(.*)$/);
         if (letterMatch) {
-           prefix += letterMatch[1];
-           firstLetter = letterMatch[2].normalize('NFKD');
-           restOfLine = letterMatch[3];
+          prefix += letterMatch[1];
+          firstLetter = letterMatch[2].normalize('NFKD');
+          restOfLine = letterMatch[3];
         }
       }
 
@@ -321,46 +321,46 @@ export default function App() {
       );
 
       const renderNavDetails = () => {
-          if (!anchorId || sectionHeaders.length <= 1) return null;
-          return (
-            <details className="no-print" style={{ textAlign: 'center', marginBottom: '25px' }}>
-              <summary style={{ cursor: 'pointer', fontSize: '0.95rem', color: theme.primary, display: 'inline-block', padding: '5px 15px', fontWeight: 600, backgroundColor: '#edf2f7', borderRadius: '20px', border: `1px dashed ${theme.primary}` }}>
-                ⏷ ניווט לפרקים נוספים
-              </summary>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '12px', padding: '0 10px' }}>
-                {sectionHeaders.map((h, idx) => (
-                  <a 
-                    key={idx} 
-                    href={`#subtitle-${sectionId}-${h.replace(/\s+/g, '-')}`}
-                    style={{ padding: '5px 12px', backgroundColor: h === headerText ? theme.primary : '#ffffff', color: h === headerText ? 'white' : theme.primary, borderRadius: '15px', textDecoration: 'none', fontSize: '0.85rem', fontWeight: h === headerText ? 700 : 600, border: `1px solid ${theme.primary}`, transition: 'all 0.2s', whiteSpace: 'nowrap' }}
-                  >
-                    {h}
-                  </a>
-                ))}
-              </div>
-            </details>
-          );
+        if (!anchorId || sectionHeaders.length <= 1) return null;
+        return (
+          <details className="no-print" style={{ textAlign: 'center', marginBottom: '25px' }}>
+            <summary style={{ cursor: 'pointer', fontSize: '0.95rem', color: theme.primary, display: 'inline-block', padding: '5px 15px', fontWeight: 600, backgroundColor: '#edf2f7', borderRadius: '20px', border: `1px dashed ${theme.primary}` }}>
+              ⏷ ניווט לפרקים נוספים
+            </summary>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginTop: '12px', padding: '0 10px' }}>
+              {sectionHeaders.map((h, idx) => (
+                <a
+                  key={idx}
+                  href={`#subtitle-${sectionId}-${h.replace(/\s+/g, '-')}`}
+                  style={{ padding: '5px 12px', backgroundColor: h === headerText ? theme.primary : '#ffffff', color: h === headerText ? 'white' : theme.primary, borderRadius: '15px', textDecoration: 'none', fontSize: '0.85rem', fontWeight: h === headerText ? 700 : 600, border: `1px solid ${theme.primary}`, transition: 'all 0.2s', whiteSpace: 'nowrap' }}
+                >
+                  {h}
+                </a>
+              ))}
+            </div>
+          </details>
+        );
       };
 
       if (isH3) {
-          if (isMishnahOutro && cleanLine.replace(/["”“'״׳*~]/g, "").includes("אותיות נשמה")) {
-            inNeshamaSection = true;
-          }
-          const h3Element = (
-            <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px', marginTop: '35px' }}>
-              ~ {headerText} ~
-            </h3>
-          );
+        if (isMishnahOutro && cleanLine.replace(/["”“'״׳*~]/g, "").includes("אותיות נשמה")) {
+          inNeshamaSection = true;
+        }
+        const h3Element = (
+          <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px', marginTop: '35px' }}>
+            ~ {headerText} ~
+          </h3>
+        );
 
-          if (anchorId) {
-              return (
-                <div key={i} id={anchorId} style={{ marginTop: '20px' }}>
-                  {h3Element}
-                  {renderNavDetails()}
-                </div>
-              );
-          }
-          return <div key={i}>{h3Element}</div>;
+        if (anchorId) {
+          return (
+            <div key={i} id={anchorId} style={{ marginTop: '20px' }}>
+              {h3Element}
+              {renderNavDetails()}
+            </div>
+          );
+        }
+        return <div key={i}>{h3Element}</div>;
       }
 
       const pStyle = {
@@ -374,12 +374,12 @@ export default function App() {
       };
 
       if (anchorId) {
-          return (
-            <div key={i} id={anchorId} style={{ marginTop: '20px' }}>
-              <p style={pStyle}>{content}</p>
-              {renderNavDetails()}
-            </div>
-          );
+        return (
+          <div key={i} id={anchorId} style={{ marginTop: '20px' }}>
+            <p style={pStyle}>{content}</p>
+            {renderNavDetails()}
+          </div>
+        );
       }
 
       return <p key={i} style={pStyle}>{content}</p>;
@@ -465,15 +465,15 @@ export default function App() {
         <div style={{ backgroundColor: theme.card, padding: '25px', borderRadius: '16px', boxShadow: '0 6px 20px rgba(0,0,0,0.04)', width: '100%', maxWidth: '450px', textAlign: 'center', borderTop: `4px solid ${theme.accent}` }}>
           <h2 style={{ color: theme.primary, marginBottom: '10px', fontSize: '1.4rem', fontWeight: 700 }}>מחשבון תאריך עברי</h2>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '15px', textAlign: 'right' }}>
-            <div style={{ flex: 1 }}><label style={{ display: 'block', fontSize: '0.9rem', color: theme.primary, marginBottom: '5px' }}>שנה</label><input type="number" placeholder="2026" value={calcYear} onChange={(e) => setCalcYear(e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid #cbd5e0', backgroundColor: '#fff', color: theme.text, boxSizing: 'border-box' }}/></div>
+            <div style={{ flex: 1 }}><label style={{ display: 'block', fontSize: '0.9rem', color: theme.primary, marginBottom: '5px' }}>שנה</label><input type="number" placeholder="2026" value={calcYear} onChange={(e) => setCalcYear(e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid #cbd5e0', backgroundColor: '#fff', color: theme.text, boxSizing: 'border-box' }} /></div>
             <div style={{ flex: 1.5 }}><label style={{ display: 'block', fontSize: '0.9rem', color: theme.primary, marginBottom: '5px' }}>חודש</label><select value={calcMonth} onChange={(e) => setCalcMonth(e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid #cbd5e0', backgroundColor: '#fff', color: theme.text, boxSizing: 'border-box', cursor: 'pointer' }}><option value="">בחר...</option><option value="1">ינואר</option><option value="2">פברואר</option><option value="3">מרץ</option><option value="4">אפריל</option><option value="5">מאי</option><option value="6">יוני</option><option value="7">יולי</option><option value="8">אוגוסט</option><option value="9">ספטמבר</option><option value="10">אוקטובר</option><option value="11">נובמבר</option><option value="12">דצמבר</option></select></div>
-            <div style={{ flex: 1 }}><label style={{ display: 'block', fontSize: '0.9rem', color: theme.primary, marginBottom: '5px' }}>יום</label><input type="number" placeholder="16" min="1" max="31" value={calcDay} onChange={(e) => setCalcDay(e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid #cbd5e0', backgroundColor: '#fff', color: theme.text, boxSizing: 'border-box' }}/></div>
+            <div style={{ flex: 1 }}><label style={{ display: 'block', fontSize: '0.9rem', color: theme.primary, marginBottom: '5px' }}>יום</label><input type="number" placeholder="16" min="1" max="31" value={calcDay} onChange={(e) => setCalcDay(e.target.value)} style={{ width: '100%', padding: '10px', fontSize: '16px', borderRadius: '6px', border: '1px solid #cbd5e0', backgroundColor: '#fff', color: theme.text, boxSizing: 'border-box' }} /></div>
           </div>
           <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', color: theme.text, fontSize: '1.1rem', marginBottom: '20px' }}><input type="checkbox" checked={afterSunset} onChange={(e) => setAfterSunset(e.target.checked)} style={{ width: '18px', height: '18px', cursor: 'pointer' }} />התאריך חל <strong>לאחר השקיעה</strong></label>
           {hebDateLetters && <div style={{ padding: '15px', backgroundColor: '#f0f4f8', border: `1px solid ${theme.primary}`, borderRadius: '8px', color: theme.primary }}><div style={{ fontSize: '1.4rem', fontWeight: 800, marginBottom: '5px' }}>{hebDateLetters}</div><div style={{ fontSize: '1.1rem', color: '#4a5568', opacity: 0.8 }}>({hebDateNumbers})</div></div>}
         </div>
         {!isNativeApp && (
-          <footer style={{ maxWidth: '600px', textAlign: 'center', marginTop: '20px', color: '#718096', fontSize: '0.9rem', lineHeight: '1.6' }}><strong>אודות המערכת:</strong><br/>אפליקציית ״אזכרה״ מאפשרת יצירת חוברת אזכרה אישית להדפסה ולשיתוף בחינם. המערכת מפיקה אוטומטית סדר לימוד משניות לעילוי נשמת הנפטר (לפי אותיות השם), פרקי תהילים, אותיות נשמה, אדרא זוטא ותפילות השכבה וקדיש. בנוסף, האתר כולל מחשבון תאריך עברי לאזכרה לאיתור מדויק של יום הפטירה.</footer>
+          <footer style={{ maxWidth: '600px', textAlign: 'center', marginTop: '20px', color: '#718096', fontSize: '0.9rem', lineHeight: '1.6' }}><strong>אודות המערכת:</strong><br />אפליקציית ״אזכרה״ מאפשרת יצירת חוברת אזכרה אישית להדפסה ולשיתוף בחינם. המערכת מפיקה אוטומטית סדר לימוד משניות לעילוי נשמת הנפטר (לפי אותיות השם), פרקי תהילים, אותיות נשמה, אדרא זוטא ותפילות השכבה וקדיש. בנוסף, האתר כולל מחשבון תאריך עברי לאזכרה לאיתור מדויק של יום הפטירה.</footer>
         )}
       </div>
     );
@@ -570,7 +570,7 @@ export default function App() {
       )}
 
       <main style={{ flex: 1, padding: isMobile ? '20px' : '40px', fontSize: `${fontSize}px`, maxWidth: '900px', margin: '0 auto', lineHeight: '1.9' }}>
-        
+
         <div className="print-only print-toc-page" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', textAlign: 'center' }}>
           <h1 style={{ color: theme.primary, fontSize: '40pt', marginBottom: '10px', fontFamily: theme.uiFont }}>חוברת לימוד</h1>
           <p style={{ fontSize: '24pt', marginBottom: '40px', color: '#4a5568' }}>לעילוי נשמת {name}</p>
@@ -593,10 +593,10 @@ export default function App() {
           {letters.map((char: string, index: number) => {
             const blockData = getMishnayotForLetter(char, index, letters);
             return (
-             <div key={`mishnah-${index}`} style={{ marginBottom: '35px' }}>
-               <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
-               {blockData ? blockData.map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { enlargeFirstLetter: i === 0 })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
-             </div>
+              <div key={`mishnah-${index}`} style={{ marginBottom: '35px' }}>
+                <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
+                {blockData ? blockData.map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { enlargeFirstLetter: i === 0 })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
+              </div>
             );
           })}
           <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e2e8f0' }}>
@@ -607,19 +607,19 @@ export default function App() {
         <SectionCard id="tehillim" title="תהילים">
           <p style={{ textAlign: 'center', marginBottom: '35px', fontWeight: 700, color: theme.primary }}>{appData.tehillimIntro}</p>
           {letters.map((char: string, index: number) => (
-             <div key={`tehillim-${index}`} style={{ marginBottom: '30px' }}>
-               <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
-               {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { forceCenter: true })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
-             </div>
+            <div key={`tehillim-${index}`} style={{ marginBottom: '30px' }}>
+              <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
+              {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { forceCenter: true })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
+            </div>
           ))}
           {includeNeshama && (
             <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '2px dashed #e2e8f0' }}>
               <h3 className="print-heading" style={{ color: theme.primary, textAlign: 'center', fontSize: '2rem', marginBottom: '25px' }}>~ תהילים לאותיות נשמה ~</h3>
               {['נ', 'ש', 'מ', 'ה'].map((char: string, index: number) => (
-               <div key={`tehillim-neshama-${index}`} style={{ marginBottom: '30px' }}>
-                 <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
-                 {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { forceCenter: true })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
-               </div>
+                <div key={`tehillim-neshama-${index}`} style={{ marginBottom: '30px' }}>
+                  <h3 className="print-heading" style={{ color: theme.accent, textAlign: 'center', fontSize: '1.8rem', marginBottom: '15px' }}>~ אות {char} ~</h3>
+                  {tehillimData[char] ? tehillimData[char].map((text: string, i: number) => <div key={i}>{renderFormattedText(text, { forceCenter: true })}</div>) : <p>הטקסט יתווסף בהמשך</p>}
+                </div>
               ))}
             </div>
           )}
@@ -642,7 +642,7 @@ export default function App() {
             (אם יש עשרה, אומרים רבי חנניה וקדיש על ישראל)
           </p>
           <div style={{ marginTop: '25px', paddingTop: '20px', borderTop: '1px dashed #cbd5e0' }}>
-             {renderFormattedText("רִבִּי חֲנַנְיָא בֶּן עֲקַשְׁיָא אוֹמֵר, רָצָה הַקָּדוֹשׁ בָּרוּךְ הוּא לְזַכּוֹת אֶת יִשְׂרָאֵל, לְפִיכָּךְ הִרְבָּה לָהֶם תּוֹרָה וּמִצְוֹת. שֶׁנֶּאֱמָר: יְהֹוָה חָפֵץ לְמַעַן צִדְקוֹ. יַגְדִּיל תּוֹרָה וְיַאְדִּיר:", { forceCenter: true })}
+            {renderFormattedText("רִבִּי חֲנַנְיָא בֶּן עֲקַשְׁיָא אוֹמֵר, רָצָה הַקָּדוֹשׁ בָּרוּךְ הוּא לְזַכּוֹת אֶת יִשְׂרָאֵל, לְפִיכָּךְ הִרְבָּה לָהֶם תּוֹרָה וּמִצְוֹת. שֶׁנֶּאֱמָר: יְהֹוָה חָפֵץ לְמַעַן צִדְקוֹ. יַגְדִּיל תּוֹרָה וְיַאְדִּיר:", { forceCenter: true })}
           </div>
         </SectionCard>
 
@@ -660,22 +660,22 @@ export default function App() {
         {includeTfilot && (
           <>
             <SectionCard id="mincha" title="תפילת מנחה">
-              <MiniTOC 
-                text={appData.mincha ? (appData.mincha as Record<string, string>)[nusach] : ''} 
-                sectionId="mincha" 
+              <MiniTOC
+                text={appData.mincha ? (appData.mincha as Record<string, string>)[nusach] : ''}
+                sectionId="mincha"
               />
-              {appData.mincha 
-                ? renderFormattedText((appData.mincha as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', { sectionId: 'mincha', isMinchaArvit: true }) 
+              {appData.mincha
+                ? renderFormattedText((appData.mincha as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', { sectionId: 'mincha', isMinchaArvit: true })
                 : <p>הטקסט יתווסף בהמשך</p>}
             </SectionCard>
             <SectionCard id="arvit" title="תפילת ערבית">
-               <MiniTOC 
-                 text={appData.arvit ? (appData.arvit as Record<string, string>)[nusach] : ''} 
-                 sectionId="arvit" 
-               />
-               {appData.arvit 
-                 ? renderFormattedText((appData.arvit as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', { sectionId: 'arvit', isMinchaArvit: true }) 
-                 : <p>הטקסט יתווסף בהמשך</p>}
+              <MiniTOC
+                text={appData.arvit ? (appData.arvit as Record<string, string>)[nusach] : ''}
+                sectionId="arvit"
+              />
+              {appData.arvit
+                ? renderFormattedText((appData.arvit as Record<string, string>)[nusach] || 'הטקסט יתווסף בהמשך', { sectionId: 'arvit', isMinchaArvit: true })
+                : <p>הטקסט יתווסף בהמשך</p>}
             </SectionCard>
           </>
         )}
